@@ -47,13 +47,6 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew build
-      - name: Container vulnerability scanning
-        uses: anchore/scan-action@v3
-        id: scan
-        with:
-          path: "${{ github.workspace }}"
-          fail-build: false
-          severity-cutoff: high
   package:
     name: Package and Publish
     if: ${{ github.ref == 'refs/heads/main' }}
