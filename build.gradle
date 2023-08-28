@@ -2,6 +2,32 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.1.3'
     id 'io.spring.dependency-management' version '1.1.3'
+
+    id "org.owasp.dependencycheck" version "8.4.0"
+    id 'checkstyle'
+    id 'pmd'
+}
+
+// Checks Dependencies for Known Vulnerabilities
+dependencyCheck {
+    suppressionFile = file("${project.rootDir}/config/dependency_check/suppressions.xml")
+    failBuildOnCVSS = 7.0 // fails on high and critical severity scores
+}
+
+// Java Code Style Checker Following (mostly) Google Style Guidelines
+checkstyle {
+    toolVersion = '10.12.2'
+    configFile = file("${project.rootDir}/config/checkstyle/google_checks.xml")
+}
+
+// Java PMD for Enforcing Several Code Quality Measures
+pmd {
+    consoleOutput = true
+    rulesMinimumPriority = 5
+    ruleSetFiles = files("config/pmd/bestpractices.xml", "config/pmd/codestyle.xml", "config/pmd/design.xml",
+            "config/pmd/documentation.xml", "config/pmd/errorprone.xml", "config/pmd/multithreading.xml",
+            "config/pmd/performance.xml", "config/pmd/security.xml")
+    toolVersion = '6.55.+'
 }
 
 group = 'com.grouphq'
@@ -28,10 +54,13 @@ ext {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
-    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+//    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+//    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+
+    implementation 'io.sentry:sentry-spring-boot-starter-jakarta:6.28.0'
+
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.projectreactor:reactor-test'

@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+
+<ruleset name="Custom Rules Codestyle"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Custom Rules based on Codestyle Ruleset Category
+    </description>
+
+    <rule ref="category/java/codestyle.xml/AvoidDollarSigns" />
+    <rule ref="category/java/codestyle.xml/AvoidProtectedFieldInFinalClass" />
+    <rule ref="category/java/codestyle.xml/AvoidProtectedMethodInFinalClassNotExtending" />
+    <rule ref="category/java/codestyle.xml/AvoidUsingNativeCode" />
+    <rule ref="category/java/codestyle.xml/BooleanGetMethodName" />
+    <rule ref="category/java/codestyle.xml/CallSuperInConstructor" />
+    <rule ref="category/java/codestyle.xml/ClassNamingConventions" />
+    <rule ref="category/java/codestyle.xml/CommentDefaultAccessModifier" />
+    <rule ref="category/java/codestyle.xml/ConfusingTernary" />
+    <rule ref="category/java/codestyle.xml/ControlStatementBraces" />
+    <rule ref="category/java/codestyle.xml/EmptyControlStatement" />
+    <rule ref="category/java/codestyle.xml/EmptyMethodInAbstractClassShouldBeAbstract" />
+    <rule ref="category/java/codestyle.xml/ExtendsObject" />
+    <rule ref="category/java/codestyle.xml/FieldDeclarationsShouldBeAtStartOfClass" />
+    <rule ref="category/java/codestyle.xml/FieldNamingConventions" />
+    <rule ref="category/java/codestyle.xml/FinalParameterInAbstractMethod" />
+    <rule ref="category/java/codestyle.xml/ForLoopShouldBeWhileLoop" />
+    <rule ref="category/java/codestyle.xml/FormalParameterNamingConventions" />
+    <rule ref="category/java/codestyle.xml/GenericsNaming" />
+    <rule ref="category/java/codestyle.xml/IdenticalCatchBranches" />
+    <rule ref="category/java/codestyle.xml/LinguisticNaming" />
+    <rule ref="category/java/codestyle.xml/LocalHomeNamingConvention" />
+    <rule ref="category/java/codestyle.xml/LocalInterfaceSessionNamingConvention" />
+    <rule ref="category/java/codestyle.xml/LocalVariableCouldBeFinal" />
+    <rule ref="category/java/codestyle.xml/LocalVariableNamingConventions" />
+    <rule ref="category/java/codestyle.xml/MDBAndSessionBeanNamingConvention" />
+    <rule ref="category/java/codestyle.xml/MethodArgumentCouldBeFinal" />
+    <rule ref="category/java/codestyle.xml/MethodNamingConventions" />
+    <rule ref="category/java/codestyle.xml/NoPackage" />
+    <rule ref="category/java/codestyle.xml/OnlyOneReturn" />
+    <rule ref="category/java/codestyle.xml/PackageCase" />
+    <rule ref="category/java/codestyle.xml/PrematureDeclaration" />
+    <rule ref="category/java/codestyle.xml/RemoteInterfaceNamingConvention" />
+    <rule ref="category/java/codestyle.xml/RemoteSessionInterfaceNamingConvention" />
+    <rule ref="category/java/codestyle.xml/ShortClassName" />
+    <rule ref="category/java/codestyle.xml/ShortMethodName" />
+    <rule ref="category/java/codestyle.xml/ShortVariable" />
+    <rule ref="category/java/codestyle.xml/TooManyStaticImports" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryAnnotationValueElement" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryCast" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryConstructor" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryFullyQualifiedName" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryLocalBeforeReturn" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryImport" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryModifier" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryReturn" />
+    <rule ref="category/java/codestyle.xml/UnnecessarySemicolon" />
+    <rule ref="category/java/codestyle.xml/UseDiamondOperator" />
+    <rule ref="category/java/codestyle.xml/UselessParentheses" />
+    <rule ref="category/java/codestyle.xml/UselessQualifiedThis" />
+    <rule ref="category/java/codestyle.xml/UseShortArrayInitializer" />
+    <rule ref="category/java/codestyle.xml/UseUnderscoresInNumericLiterals" />
+
+<!--  This rule is really subject to the development environment. If relying on the Spring ecosystems, names can
+      be very long to the point where having this rule becomes unnecessary. It's not uncommon to see names well into
+      30+ characters. See here for the longest Spring names "https://gist.github.com/thom-nic/2c74ed4075569da0f80b"  -->
+<!--    <rule ref="category/java/codestyle.xml/LongVariable" />-->
+
+<!--  This rule requires at least one explicit constructor.
+      More of a preference rule, we've decided not to include it  -->
+<!--    <rule ref="category/java/codestyle.xml/AtLeastOneConstructor" />-->
+
+<!--  This is a new rule belonging to PMD 7.0.0, which Gradle's PMD plugin doesn't currently support.
+      Add it once Gradle can use PMD 7.0.0 or higher. -->
+<!--    <rule ref="category/java/codestyle.xml/UnnecessaryBoxing" /> Uncomment this once 7.0.0 is released-->
+
+</ruleset>

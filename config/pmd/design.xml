@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+
+<ruleset name="Custom Rules Design"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Custom Rules based on Design Ruleset Category
+    </description>
+
+    <rule ref="category/java/design.xml/AbstractClassWithoutAnyMethod" />
+    <rule ref="category/java/design.xml/AvoidCatchingGenericException" />
+    <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts" />
+    <rule ref="category/java/design.xml/AvoidRethrowingException" />
+    <rule ref="category/java/design.xml/AvoidThrowingNewInstanceOfSameException" />
+    <rule ref="category/java/design.xml/AvoidThrowingNullPointerException" />
+    <rule ref="category/java/design.xml/AvoidThrowingRawExceptionTypes" />
+    <rule ref="category/java/design.xml/AvoidUncheckedExceptionsInSignatures" />
+    <rule ref="category/java/design.xml/ClassWithOnlyPrivateConstructorsShouldBeFinal" />
+    <rule ref="category/java/design.xml/CognitiveComplexity" />
+    <rule ref="category/java/design.xml/CollapsibleIfStatements" />
+    <rule ref="category/java/design.xml/CouplingBetweenObjects" />
+    <rule ref="category/java/design.xml/CyclomaticComplexity" />
+    <rule ref="category/java/design.xml/DataClass" />
+    <rule ref="category/java/design.xml/DoNotExtendJavaLangError" />
+    <rule ref="category/java/design.xml/ExceptionAsFlowControl" />
+    <rule ref="category/java/design.xml/ExcessiveImports" />
+    <rule ref="category/java/design.xml/ExcessiveParameterList" />
+    <rule ref="category/java/design.xml/ExcessivePublicCount" />
+    <rule ref="category/java/design.xml/FinalFieldCouldBeStatic" />
+    <rule ref="category/java/design.xml/GodClass" />
+    <rule ref="category/java/design.xml/ImmutableField" />
+    <rule ref="category/java/design.xml/InvalidJavaBean" />
+    <rule ref="category/java/design.xml/LogicInversion" />
+    <rule ref="category/java/design.xml/MutableStaticState" />
+    <rule ref="category/java/design.xml/NcssCount" />
+    <rule ref="category/java/design.xml/NPathComplexity" />
+    <rule ref="category/java/design.xml/SignatureDeclareThrowsException" />
+    <rule ref="category/java/design.xml/SimplifiedTernary" />
+    <rule ref="category/java/design.xml/SimplifyBooleanExpressions" />
+    <rule ref="category/java/design.xml/SimplifyBooleanReturns" />
+    <rule ref="category/java/design.xml/SimplifyConditional" />
+    <rule ref="category/java/design.xml/SingularField" />
+    <rule ref="category/java/design.xml/SwitchDensity" />
+    <rule ref="category/java/design.xml/TooManyFields" />
+    <rule ref="category/java/design.xml/TooManyMethods" />
+    <rule ref="category/java/design.xml/UselessOverridingMethod" />
+    <rule ref="category/java/design.xml/UseObjectForClearerAPI" />
+
+<!--  Though this rule aims to help follow the Law of Demeter, it is "prone to many false-positives
+      and low-priority warnings". We recommend to disable the rule since it could cause more harm than good,
+      or enable it with a high trust radius (see docs). In any case, one should strive to keep the Law of Demeter
+      in mind when developing or reviewing code. -->
+<!--    <rule ref="category/java/design.xml/LawOfDemeter" />-->
+
+<!--  This rule aims to minimize dependencies between packages to enhance maintainability and reduce the impact
+      of changes. However, following this rule requires significant maintenance effort, especially in environments
+      where many packages are used and frequently changed—common in early development stages. You can specify allowed
+      packages and classes through the 'packages' and 'classes' properties respectively, providing some flexibility.
+      Due to the overhead and complexities it may introduce, it's recommended to enable this rule when the application
+      reaches a more mature state, or to consider ignoring it altogether.-->
+<!--    <rule ref="category/java/design.xml/LoosePackageCoupling" />-->
+
+<!--  Disabled for preference reasons  -->
+<!--    <rule ref="category/java/design.xml/UseUtilityClass" />-->
+
+<!--  Below rules are deprecated. See docs for more info if you think you need them.  -->
+<!-- DEPRECATED    <rule ref="category/java/design.xml/ExcessiveClassLength" />-->
+<!-- DEPRECATED    <rule ref="category/java/design.xml/ExcessiveMethodLength" />-->
+
+</ruleset>
