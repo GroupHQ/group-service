@@ -47,6 +47,11 @@ repositories {
     mavenCentral()
 }
 
+bootBuildImage {
+    imageName = "${project.name}"
+    environment = ["BP_JVM_VERSION" : "17.*"]
+}
+
 ext {
     set('springCloudVersion', "2022.0.4")
 }
