@@ -3,7 +3,7 @@ on: push
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: makmn1/GroupHQ/group-service
+  IMAGE_NAME: GroupHQ/group-service
   VERSION: ${{ github.sha }}
 
 jobs:
