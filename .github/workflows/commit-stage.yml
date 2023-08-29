@@ -32,7 +32,7 @@ jobs:
       - name: Dependency vulnerability scanning
         run: |
           chmod +x gradlew
-          ./gradlew dependencyCheckAnalyze --info --stacktrace
+          ./gradlew dependencyCheckAnalyze --stacktrace
       - name: Checking code style
         run: |
           chmod +x gradlew
