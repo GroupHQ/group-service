@@ -12,25 +12,16 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.junit.jupiter.api.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+@DataR2dbcTest
 @Import({DataConfig.class, SecurityConfig.class})
-@Testcontainers
 @Tag("AcceptanceTest")
 public class ActiveGroupsPolicy {
-
-    @Container
-    static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
-        new PostgreSQLContainer<>(DockerImageName.parse("postgres:14.4"));
 
     @Autowired
     private GroupRepository groupRepository;
@@ -39,20 +30,6 @@ public class ActiveGroupsPolicy {
     private WebTestClient webTestClient;
 
     private WebTestClient.ListBodySpec<Group> groupResponse;
-
-    @DynamicPropertySource
-    static void postgresqlProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.r2dbc.url", ActiveGroupsPolicy::r2dbcUrl);
-        registry.add("spring.r2dbc.username", POSTGRESQL_CONTAINER::getUsername);
-        registry.add("spring.r2dbc.password", POSTGRESQL_CONTAINER::getPassword);
-        registry.add("spring.flyway.url", POSTGRESQL_CONTAINER::getJdbcUrl);
-    }
-
-    private static String r2dbcUrl() {
-        return String.format("r2dbc:postgresql://%s:%s/%s", POSTGRESQL_CONTAINER.getHost(),
-            POSTGRESQL_CONTAINER.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT),
-            POSTGRESQL_CONTAINER.getDatabaseName());
-    }
 
     @Given("there are active groups")
     public void thereAreActiveGroups() {
