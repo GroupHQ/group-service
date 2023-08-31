@@ -36,9 +36,7 @@
   </module>
   <!-- https://checkstyle.org/filters/suppressionfilter.html -->
   <module name="SuppressionFilter">
-    <property name="file" value="${org.checkstyle.google.suppressionfilter.config}"
-           default="checkstyle-suppressions.xml" />
-    <property name="optional" value="true"/>
+    <property name="file" value="${suppressionFile}" default="suppressions.xml"/>
   </module>
 
   <!-- Checks for whitespace                               -->

@@ -1,11 +1,7 @@
-package com.grouphq.groupservice.group.domain.members;
+package com.grouphq.groupservice.group.domain.groups;
 
 import static org.mockito.BDDMockito.given;
 
-import com.grouphq.groupservice.group.domain.groups.Group;
-import com.grouphq.groupservice.group.domain.groups.GroupRepository;
-import com.grouphq.groupservice.group.domain.groups.GroupService;
-import com.grouphq.groupservice.group.domain.groups.GroupStatus;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeAll;

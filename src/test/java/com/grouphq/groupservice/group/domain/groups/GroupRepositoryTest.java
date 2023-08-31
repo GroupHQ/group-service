@@ -1,11 +1,8 @@
-package com.grouphq.groupservice.group.domain.members;
+package com.grouphq.groupservice.group.domain.groups;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.grouphq.groupservice.config.DataConfig;
-import com.grouphq.groupservice.group.domain.groups.Group;
-import com.grouphq.groupservice.group.domain.groups.GroupRepository;
-import com.grouphq.groupservice.group.domain.groups.GroupStatus;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;

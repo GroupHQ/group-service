@@ -11,8 +11,6 @@ import org.springframework.context.ApplicationContext;
 /**
  * Test setup.
  *
- * @author makmn
- *
  */
 @SpringBootTest
 @Tag("IntegrationTest")

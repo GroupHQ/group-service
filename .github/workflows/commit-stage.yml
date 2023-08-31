@@ -44,7 +44,9 @@ jobs:
       - name: Running Unit Tests
         run: ./gradlew testUnit
       - name: Running Integration Tests
-        run: /gradlew testIntegration
+        run: ./gradlew testIntegration
+      - name: Running Acceptance Tests
+        run: ./gradlew testAcceptance
       - name: Assembling Build
         run: ./gradlew assemble
   package:
