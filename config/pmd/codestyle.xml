@@ -16,7 +16,6 @@
     <rule ref="category/java/codestyle.xml/BooleanGetMethodName" />
     <rule ref="category/java/codestyle.xml/CallSuperInConstructor" />
     <rule ref="category/java/codestyle.xml/ClassNamingConventions" />
-    <rule ref="category/java/codestyle.xml/CommentDefaultAccessModifier" />
     <rule ref="category/java/codestyle.xml/ConfusingTernary" />
     <rule ref="category/java/codestyle.xml/ControlStatementBraces" />
     <rule ref="category/java/codestyle.xml/EmptyControlStatement" />
@@ -35,7 +34,6 @@
     <rule ref="category/java/codestyle.xml/LocalVariableCouldBeFinal" />
     <rule ref="category/java/codestyle.xml/LocalVariableNamingConventions" />
     <rule ref="category/java/codestyle.xml/MDBAndSessionBeanNamingConvention" />
-    <rule ref="category/java/codestyle.xml/MethodArgumentCouldBeFinal" />
     <rule ref="category/java/codestyle.xml/MethodNamingConventions" />
     <rule ref="category/java/codestyle.xml/NoPackage" />
     <rule ref="category/java/codestyle.xml/OnlyOneReturn" />
@@ -44,8 +42,16 @@
     <rule ref="category/java/codestyle.xml/RemoteInterfaceNamingConvention" />
     <rule ref="category/java/codestyle.xml/RemoteSessionInterfaceNamingConvention" />
     <rule ref="category/java/codestyle.xml/ShortClassName" />
-    <rule ref="category/java/codestyle.xml/ShortMethodName" />
-    <rule ref="category/java/codestyle.xml/ShortVariable" />
+    <rule ref="category/java/codestyle.xml/ShortMethodName">
+        <properties>
+            <property name="minimum" value="2" />
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/ShortVariable">
+        <properties>
+            <property name="minimum" value="2" />
+        </properties>
+    </rule>
     <rule ref="category/java/codestyle.xml/TooManyStaticImports" />
     <rule ref="category/java/codestyle.xml/UnnecessaryAnnotationValueElement" />
     <rule ref="category/java/codestyle.xml/UnnecessaryCast" />
@@ -67,9 +73,11 @@
       30+ characters. See here for the longest Spring names "https://gist.github.com/thom-nic/2c74ed4075569da0f80b"  -->
 <!--    <rule ref="category/java/codestyle.xml/LongVariable" />-->
 
-<!--  This rule requires at least one explicit constructor.
-      More of a preference rule, we've decided not to include it  -->
+<!--  More of a preference rule, we've decided not to include them  -->
 <!--    <rule ref="category/java/codestyle.xml/AtLeastOneConstructor" />-->
+<!--    <rule ref="category/java/codestyle.xml/CommentDefaultAccessModifier" />-->
+<!--    <rule ref="category/java/codestyle.xml/MethodArgumentCouldBeFinal" />-->
+
 
 <!--  This is a new rule belonging to PMD 7.0.0, which Gradle's PMD plugin doesn't currently support.
       Add it once Gradle can use PMD 7.0.0 or higher. -->

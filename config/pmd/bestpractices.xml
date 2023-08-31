@@ -30,9 +30,11 @@
     <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseBeforeAnnotation" />
     <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseTestAnnotation" />
     <rule ref="category/java/bestpractices.xml/JUnit5TestShouldBePackagePrivate" />
-    <rule ref="category/java/bestpractices.xml/JUnitAssertionsShouldIncludeMessage" />
-    <rule ref="category/java/bestpractices.xml/JUnitTestContainsTooManyAsserts" />
-    <rule ref="category/java/bestpractices.xml/JUnitTestsShouldIncludeAssert" />
+    <rule ref="category/java/bestpractices.xml/JUnitTestContainsTooManyAsserts">
+        <properties>
+            <property name="maximumAsserts" value="2" />
+        </properties>
+    </rule>
     <rule ref="category/java/bestpractices.xml/JUnitUseExpected" />
     <rule ref="category/java/bestpractices.xml/LiteralsFirstInComparisons" />
     <rule ref="category/java/bestpractices.xml/LooseCoupling" />
@@ -61,5 +63,10 @@
 <!--  These rules are only meant for Java 10 and below. See the docs for more info.  -->
     <!--    <rule ref="category/java/bestpractices.xml/AccessorClassGeneration" />-->
     <!--    <rule ref="category/java/bestpractices.xml/AccessorMethodGeneration" />-->
+
+<!--  This rule results in a false positive with AssertJ statements -->
+<!--    <rule ref="category/java/bestpractices.xml/JUnitAssertionsShouldIncludeMessage" />-->
+<!--    <rule ref="category/java/bestpractices.xml/JUnitTestsShouldIncludeAssert" />-->
+
 
 </ruleset>
