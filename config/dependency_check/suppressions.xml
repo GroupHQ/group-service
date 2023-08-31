@@ -1,12 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
 
-<!--  Suppressing this since there is controversy on how much of a problem it really is and is used by Spring Boot-->
+<!--  Acknowledge suppression in commit, preferably with a good reason  -->
     <suppress>
         <notes><![CDATA[
       file name: snakeyaml-1.33.jar
       ]]></notes>
         <packageUrl regex="true">^pkg:maven/org\.yaml/snakeyaml@.*$</packageUrl>
         <cve>CVE-2022-1471</cve>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+   file name: spring-amqp-3.0.8.jar
+   ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.amqp/spring\-amqp@.*$</packageUrl>
+        <cve>CVE-2023-34040</cve>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+   file name: spring-rabbit-3.0.8.jar
+   ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.amqp/spring\-rabbit@.*$</packageUrl>
+        <cve>CVE-2023-34040</cve>
     </suppress>
 </suppressions>
