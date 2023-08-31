@@ -5,20 +5,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 /**
- * Application Setup.
- *
- * @author makmn
- *
+ * The entry point to the application setting up the Spring Context.
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
 public class GroupServiceApplication {
 
-    /**
-     * Entry point to application.
-     *
-     * @param args Command-line arguments
-     */
     public static void main(final String[] args) {
         SpringApplication.run(GroupServiceApplication.class, args);
     }
