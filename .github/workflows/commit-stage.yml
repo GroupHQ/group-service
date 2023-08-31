@@ -29,24 +29,26 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
       - name: Dependency vulnerability scanning
-        run: |
-          chmod +x gradlew
-          ./gradlew dependencyCheckAnalyze --stacktrace
+        run: ./gradlew dependencyCheckAnalyze --stacktrace
       - name: Checking code style
         run: |
-          chmod +x gradlew
           ./gradlew checkstyleMain
           ./gradlew checkstyleTest
       - name: Checking code quality
         run: |
-          chmod +x gradlew
           ./gradlew pmdMain
           ./gradlew pmdTest
-      - name: Build, unit tests and integration tests
-        run: |
-          chmod +x gradlew
-          ./gradlew build
+      - name: Running Unit Tests
+        run: ./gradlew testUnit
+      - name: Running Integration Tests
+        run: ./gradlew testIntegration
+      - name: Running Acceptance Tests
+        run: ./gradlew testAcceptance
+      - name: Assembling Build
+        run: ./gradlew assemble
   package:
     name: Package and Publish
     if: ${{ github.ref == 'refs/heads/main' }}

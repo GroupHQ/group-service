@@ -36,9 +36,7 @@
   </module>
   <!-- https://checkstyle.org/filters/suppressionfilter.html -->
   <module name="SuppressionFilter">
-    <property name="file" value="${org.checkstyle.google.suppressionfilter.config}"
-           default="checkstyle-suppressions.xml" />
-    <property name="optional" value="true"/>
+    <property name="file" value="${suppressionFile}" default="suppressions.xml"/>
   </module>
 
   <!-- Checks for whitespace                               -->
@@ -259,8 +257,8 @@
       <property name="basicOffset" value="4"/>
       <property name="braceAdjustment" value="4"/>
       <property name="caseIndent" value="4"/>
-      <property name="throwsIndent" value="8"/>
-      <property name="lineWrappingIndentation" value="8"/>
+      <property name="throwsIndent" value="4"/>
+      <property name="lineWrappingIndentation" value="4"/>
       <property name="arrayInitIndent" value="4"/>
     </module>
     <module name="AbbreviationAsWordInName">

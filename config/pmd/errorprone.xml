@@ -78,7 +78,6 @@
     <rule ref="category/java/errorprone.xml/SuspiciousEqualsMethodName" />
     <rule ref="category/java/errorprone.xml/SuspiciousHashcodeMethodName" />
     <rule ref="category/java/errorprone.xml/SuspiciousOctalEscape" />
-    <rule ref="category/java/errorprone.xml/TestClassWithoutTestCases" />
     <rule ref="category/java/errorprone.xml/UnconditionalIfStatement" />
     <rule ref="category/java/errorprone.xml/UnnecessaryBooleanAssertion" />
     <rule ref="category/java/errorprone.xml/UnnecessaryCaseChange" />
@@ -104,6 +103,8 @@
 <!--  This rule is covered by another rule MutableStaticState in the design category  -->
 <!--    <rule ref="category/java/errorprone.xml/AssignmentToNonFinalStatic" />  Covered by Design#MutableStaticState-->
 
+<!--  This rule is prone to false positives (GroupRepositoryTest as an example)  -->
+<!--    <rule ref="category/java/errorprone.xml/TestClassWithoutTestCases" />-->
 
 <!-- Below rules are meant only for Java 1.4 and below. Uncomment them if you're using those Java versions   -->
 <!--        <rule ref="category/java/errorprone.xml/AvoidAssertAsIdentifier" />-->
