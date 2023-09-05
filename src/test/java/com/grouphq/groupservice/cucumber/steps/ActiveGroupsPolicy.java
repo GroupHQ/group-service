@@ -18,6 +18,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.List;
+
 @DataR2dbcTest
 @Import({DataConfig.class, SecurityConfig.class})
 @Tag("AcceptanceTest")
@@ -69,5 +71,19 @@ public class ActiveGroupsPolicy {
                     group.status().equals(GroupStatus.ACTIVE),
                 "All groups received should be active");
         });
+    }
+
+    @Given("any time")
+    public void anyTime() {
+        // such as now
+    }
+
+    @Then("I should be given a list of at least {int} active groups")
+    public void iShouldBeGivenAListOfAtLeastActiveGroups(int activeGroupsNeeded) {
+        final List<Group> groups = groupRepository.getAllGroups().collectList().block();
+
+        assertThat(groups)
+            .filteredOn(group -> group.status().equals(GroupStatus.ACTIVE))
+            .hasSizeGreaterThanOrEqualTo(activeGroupsNeeded);
     }
 }

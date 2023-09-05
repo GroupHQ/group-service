@@ -5,3 +5,8 @@ Feature: Groups
     Given there are active groups
     When I request groups
     Then I should be given a list of active groups
+
+  Scenario: Always have active groups
+    Given any time
+    When I request groups
+    Then I should be given a list of at least 3 active groups
