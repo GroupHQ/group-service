@@ -52,7 +52,11 @@
             <property name="minimum" value="2" />
         </properties>
     </rule>
-    <rule ref="category/java/codestyle.xml/TooManyStaticImports" />
+    <rule ref="category/java/codestyle.xml/TooManyStaticImports">
+        <properties>
+            <property name="maximumStaticImports" value="5" />
+        </properties>
+    </rule>
     <rule ref="category/java/codestyle.xml/UnnecessaryAnnotationValueElement" />
     <rule ref="category/java/codestyle.xml/UnnecessaryCast" />
     <rule ref="category/java/codestyle.xml/UnnecessaryConstructor" />

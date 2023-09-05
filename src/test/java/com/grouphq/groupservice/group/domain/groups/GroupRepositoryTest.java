@@ -3,6 +3,7 @@ package com.grouphq.groupservice.group.domain.groups;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.grouphq.groupservice.config.DataConfig;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -86,13 +87,12 @@ class GroupRepositoryTest {
     void retrievesOnlyActiveGroups() {
         final List<Group> groupsReturned = new ArrayList<>();
 
-        StepVerifier.create(groupRepository.getAllGroups())
+        StepVerifier.create(groupRepository.findGroupsByStatus(GroupStatus.ACTIVE))
             .recordWith(() -> groupsReturned)
-            .expectNextCount(3)
+            .expectNextCount(2)
             .verifyComplete();
 
         assertThat(groupsReturned)
-            .filteredOn(group -> group.status() == GroupStatus.ACTIVE)
             .hasSize(2);
     }
 
@@ -114,5 +114,22 @@ class GroupRepositoryTest {
         assertThat(groupsReturned)
             .filteredOn(group -> group.status() == GroupStatus.AUTO_DISBANDED)
             .hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Expires groups before expiry date")
+    void expiresGroupsBeforeExpiryDate() {
+        final List<Group> groupsReturned = new ArrayList<>();
+
+        groupRepository.expireGroupsPastExpiryDate(Instant.now(), GroupStatus.AUTO_DISBANDED)
+                .thenMany(groupRepository.findGroupsByStatus(GroupStatus.AUTO_DISBANDED))
+                    .as(StepVerifier::create)
+                        .recordWith(() -> groupsReturned)
+                            .expectNextCount(3)
+                                .verifyComplete();
+
+        assertThat(groupsReturned)
+            .filteredOn(group -> group.status() == GroupStatus.AUTO_DISBANDED)
+            .hasSize(3);
     }
 }
