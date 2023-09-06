@@ -17,7 +17,7 @@ public final class GroupTestUtility {
      *
      * @return A group object with all details
      */
-    public static Group generateFullGroupDetails(Instant createdAt) {
+    public static Group generateFullGroupDetails() {
         final Faker faker = new Faker();
 
         // Generate capacities and ensure maxCapacity has the higher number
@@ -35,7 +35,7 @@ public final class GroupTestUtility {
             currentCapacity,
             GroupStatus.ACTIVE,
             Instant.now(),
-            createdAt,
+            Instant.now(),
             Instant.now(),
             "system",
             "system",

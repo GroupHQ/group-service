@@ -113,7 +113,7 @@ class GroupDemoLoaderIntegrationTest {
         Group[] testGroups = new Group[3];
 
         for (int i = 0; i < testGroups.length; i++) {
-            testGroups[i] = GroupTestUtility.generateFullGroupDetails(Instant.now());
+            testGroups[i] = GroupTestUtility.generateFullGroupDetails();
         }
 
         final List<Group> groupsSaved = new ArrayList<>();
@@ -161,7 +161,7 @@ class GroupDemoLoaderIntegrationTest {
         Group[] testGroups = new Group[3];
 
         for (int i = 0; i < testGroups.length; i++) {
-            testGroups[i] = GroupTestUtility.generateFullGroupDetails(Instant.now());
+            testGroups[i] = GroupTestUtility.generateFullGroupDetails();
         }
 
         StepVerifier.create(groupRepository.saveAll(Flux.just(testGroups)))

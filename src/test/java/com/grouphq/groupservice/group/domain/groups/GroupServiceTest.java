@@ -37,8 +37,8 @@ class GroupServiceTest {
     @DisplayName("Gets (active) groups")
     void retrievesOnlyActiveGroups() {
         final Group[] testGroups = {
-            generateFullGroupDetails(Instant.now()),
-            generateFullGroupDetails(Instant.now())
+            generateFullGroupDetails(),
+            generateFullGroupDetails()
         };
 
         final Flux<Group> mockedGroups = Flux.just(testGroups);

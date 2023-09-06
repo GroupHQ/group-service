@@ -22,3 +22,17 @@ CREATE TABLE groups (
     last_modified_by VARCHAR(255) NOT NULL,
     version INT NOT NULL
 );
+
+CREATE TABLE members (
+    id BIGSERIAL PRIMARY KEY NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    group_id BIGINT NOT NULL REFERENCES groups(id),
+    created_date TIMESTAMP NOT NULL,
+    last_modified_date TIMESTAMP NOT NULL,
+    created_by VARCHAR(255) NOT NULL,
+    last_modified_by VARCHAR(255) NOT NULL,
+    version INT NOT NULl,
+    CONSTRAINT check_username_length CHECK ( CHAR_LENGTH(username) >= 2 )
+);
+
+CREATE INDEX index_members_by_group_id ON members(group_id);

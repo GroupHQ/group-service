@@ -8,7 +8,6 @@ import com.grouphq.groupservice.group.domain.groups.Group;
 import com.grouphq.groupservice.group.domain.groups.GroupService;
 import com.grouphq.groupservice.group.domain.groups.GroupStatus;
 import com.grouphq.groupservice.group.testutility.GroupTestUtility;
-import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -34,8 +33,8 @@ class GroupControllerWebFluxTests {
     @DisplayName("When there are active groups, then return a list of active groups")
     void returnActiveGroups() {
         final Group[] testGroups = {
-            GroupTestUtility.generateFullGroupDetails(Instant.now()),
-            GroupTestUtility.generateFullGroupDetails(Instant.now())
+            GroupTestUtility.generateFullGroupDetails(),
+            GroupTestUtility.generateFullGroupDetails()
         };
 
         given(groupService.getGroups()).willReturn(Flux.just(testGroups));
