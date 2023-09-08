@@ -92,14 +92,15 @@ class GroupDemoLoaderIntegrationTest {
         @Value("${group.loader.periodic-group-addition-count}")
         int periodicGroupAdditionCount
     ) {
-        groupDemoLoader.loadGroups();
-
-        StepVerifier.create(groupRepository.getAllGroups())
+        StepVerifier.create(groupDemoLoader.loadGroups())
             .expectNextCount(initialGroupSize)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        groupDemoLoader.loadGroups();
+        StepVerifier.create(groupDemoLoader.loadGroups())
+            .expectNextCount(periodicGroupAdditionCount)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
 
         StepVerifier.create(groupRepository.getAllGroups())
             .expectNextCount(initialGroupSize + periodicGroupAdditionCount)
@@ -140,7 +141,9 @@ class GroupDemoLoaderIntegrationTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        groupDemoLoader.expireGroups();
+        StepVerifier.create(groupDemoLoader.expireGroups())
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
 
         final List<Group> groups = new ArrayList<>();
 

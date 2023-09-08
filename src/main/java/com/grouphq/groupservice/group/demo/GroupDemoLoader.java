@@ -7,6 +7,8 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * A Spring Job scheduler for periodically adding active groups
@@ -48,22 +50,32 @@ public class GroupDemoLoader {
     @Scheduled(initialDelayString = "${group.loader.initial-group-delay}",
         fixedDelayString = "${group.loader.periodic-group-addition-interval}",
         timeUnit = TimeUnit.SECONDS)
-    void loadGroups() {
+    private void loadGroupsJob() {
+        loadGroups().subscribe();
+    }
+
+    public Flux<Group> loadGroups() {
         final int groupsToAdd = initialStateLoaded
             ? periodicGroupAdditionCount : initialGroupSize;
 
-        for (int i = 0; i < groupsToAdd; i++) {
-            final Group group = groupService.generateGroup();
-            assert groupRepository != null;
-            groupRepository.save(group).subscribe();
-        }
         initialStateLoaded = true;
+        Group[] groups = new Group[groupsToAdd];
+
+        for (int i = 0; i < groupsToAdd; i++) {
+            groups[i] = groupService.generateGroup();
+        }
+
+        return groupRepository.saveAll(Flux.just(groups));
     }
 
     @Scheduled(initialDelayString = "${group.expiry-checker.initial-check-delay}",
         fixedDelayString = "${group.expiry-checker.check-interval}",
         timeUnit = TimeUnit.SECONDS)
-    void expireGroups() {
+    private void expireGroupsJob() {
         groupService.expireGroups().subscribe();
+    }
+
+    public Mono<Void> expireGroups() {
+        return groupService.expireGroups();
     }
 }
