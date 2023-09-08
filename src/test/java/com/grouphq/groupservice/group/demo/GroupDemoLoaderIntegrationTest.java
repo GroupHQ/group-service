@@ -172,7 +172,9 @@ class GroupDemoLoaderIntegrationTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        groupDemoLoader.expireGroups();
+        StepVerifier.create(groupDemoLoader.expireGroups())
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
 
         final List<Group> groups = new ArrayList<>();
 
