@@ -15,3 +15,5 @@ Feature: Groups
     Given there are active groups
     When I join a group
     Then I should be a member of that group
+
+  Scenario:

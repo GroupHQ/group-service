@@ -47,6 +47,9 @@ public class MemberPolicy {
             .verify(Duration.ofSeconds(1));
     }
 
+    /* NOTE: This test WILL FAIL if run using the IntelliJ test runner.
+     * Doing so will execute this test twice, and have it succeed on the first run but fail the second time
+     */
     @Then("I should be a member of that group")
     public void iShouldBeAMemberOfThatGroup() {
         StepVerifier.create(memberRepository.getMembersByGroup(group.id()))
