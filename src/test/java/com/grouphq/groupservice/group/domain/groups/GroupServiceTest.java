@@ -57,7 +57,7 @@ class GroupServiceTest {
     @Test
     @DisplayName("Sends expire request to repository interface")
     void expireGroups() {
-        final Mono<Integer> mono = groupService.expireGroups();
+        final Mono<Void> mono = groupService.expireGroups();
         assertThat(mono).isNull();
         verify(groupRepository)
             .expireGroupsPastExpiryDate(any(Instant.class), any(GroupStatus.class));
