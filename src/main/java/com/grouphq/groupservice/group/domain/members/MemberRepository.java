@@ -12,4 +12,7 @@ public interface MemberRepository extends ReactiveCrudRepository<Member, Long> {
 
     @Query("SELECT * FROM members WHERE group_id = :id")
     Flux<Member> getMembersByGroup(Long id);
+
+    @Query("SELECT * FROM members WHERE group_id = :id AND member_status = 'ACTIVE'")
+    Flux<Member> getActiveMembersByGroup(Long id);
 }
