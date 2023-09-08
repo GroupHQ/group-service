@@ -3,9 +3,11 @@ package com.grouphq.groupservice.group.domain.groups;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.grouphq.groupservice.config.DataConfig;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,5 +133,49 @@ class GroupRepositoryTest {
         assertThat(groupsReturned)
             .filteredOn(group -> group.status() == GroupStatus.AUTO_DISBANDED)
             .hasSize(3);
+    }
+
+    @Test
+    @DisplayName("Updates group's last active time when group is created or updates")
+    void updateGroupsLastActiveTime() {
+        AtomicReference<Group> group = new AtomicReference<>(Group.of("Title", "Description",
+            10, 5, GroupStatus.ACTIVE));
+
+        final Instant lastActiveInitial = group.get().lastActive();
+
+        StepVerifier.create(groupRepository.save(group.get()))
+            .consumeNextWith(group::set)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        // We have to get the group again since the trigger updating the active time runs after
+        // we retrieve it from the database in the previous step.
+        StepVerifier.create(groupRepository.findById(group.get().id()))
+            .consumeNextWith(group::set)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        final Instant lastActiveGroupCreated = group.get().lastActive();
+        assertThat(lastActiveGroupCreated).isAfter(lastActiveInitial);
+
+        group = new AtomicReference<>(new Group(
+            group.get().id(), group.get().title(), "New Description", group.get().maxGroupSize(),
+            group.get().currentGroupSize(), group.get().status(), group.get().lastActive(),
+            group.get().createdDate(), group.get().lastModifiedDate(), group.get().createdBy(),
+            group.get().lastModifiedBy(), group.get().version()
+        ));
+
+        StepVerifier.create(groupRepository.save(group.get()))
+            .consumeNextWith(group::set)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        StepVerifier.create(groupRepository.findById(group.get().id()))
+            .consumeNextWith(group::set)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        final Instant lastActiveGroupUpdated = group.get().lastActive();
+        assertThat(lastActiveGroupUpdated).isAfter(lastActiveGroupCreated);
     }
 }

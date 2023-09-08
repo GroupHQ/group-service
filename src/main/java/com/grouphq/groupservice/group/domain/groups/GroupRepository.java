@@ -19,5 +19,5 @@ public interface GroupRepository extends ReactiveCrudRepository<Group, Long> {
     Flux<Group> getAllGroups();
 
     @Query("UPDATE groups SET status = :status WHERE groups.created_date < :expiryDate")
-    Mono<Integer> expireGroupsPastExpiryDate(Instant expiryDate, GroupStatus status);
+    Mono<Void> expireGroupsPastExpiryDate(Instant expiryDate, GroupStatus status);
 }

@@ -82,7 +82,6 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:r2dbc'
-    testImplementation 'org.awaitility:awaitility:4.2.0'
 
     // Dependencies needed for Cucumber
     testImplementation(platform("org.junit:junit-bom:5.10.0"))

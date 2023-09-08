@@ -92,14 +92,15 @@ class GroupDemoLoaderIntegrationTest {
         @Value("${group.loader.periodic-group-addition-count}")
         int periodicGroupAdditionCount
     ) {
-        groupDemoLoader.loadGroups();
-
-        StepVerifier.create(groupRepository.getAllGroups())
+        StepVerifier.create(groupDemoLoader.loadGroups())
             .expectNextCount(initialGroupSize)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        groupDemoLoader.loadGroups();
+        StepVerifier.create(groupDemoLoader.loadGroups())
+            .expectNextCount(periodicGroupAdditionCount)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
 
         StepVerifier.create(groupRepository.getAllGroups())
             .expectNextCount(initialGroupSize + periodicGroupAdditionCount)
@@ -113,7 +114,7 @@ class GroupDemoLoaderIntegrationTest {
         Group[] testGroups = new Group[3];
 
         for (int i = 0; i < testGroups.length; i++) {
-            testGroups[i] = GroupTestUtility.generateFullGroupDetails(Instant.now());
+            testGroups[i] = GroupTestUtility.generateFullGroupDetails();
         }
 
         final List<Group> groupsSaved = new ArrayList<>();
@@ -140,7 +141,9 @@ class GroupDemoLoaderIntegrationTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        groupDemoLoader.expireGroups();
+        StepVerifier.create(groupDemoLoader.expireGroups())
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
 
         final List<Group> groups = new ArrayList<>();
 
@@ -161,7 +164,7 @@ class GroupDemoLoaderIntegrationTest {
         Group[] testGroups = new Group[3];
 
         for (int i = 0; i < testGroups.length; i++) {
-            testGroups[i] = GroupTestUtility.generateFullGroupDetails(Instant.now());
+            testGroups[i] = GroupTestUtility.generateFullGroupDetails();
         }
 
         StepVerifier.create(groupRepository.saveAll(Flux.just(testGroups)))
@@ -169,7 +172,9 @@ class GroupDemoLoaderIntegrationTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        groupDemoLoader.expireGroups();
+        StepVerifier.create(groupDemoLoader.expireGroups())
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
 
         final List<Group> groups = new ArrayList<>();
 

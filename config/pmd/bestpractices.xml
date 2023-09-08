@@ -30,11 +30,6 @@
     <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseBeforeAnnotation" />
     <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseTestAnnotation" />
     <rule ref="category/java/bestpractices.xml/JUnit5TestShouldBePackagePrivate" />
-    <rule ref="category/java/bestpractices.xml/JUnitTestContainsTooManyAsserts">
-        <properties>
-            <property name="maximumAsserts" value="2" />
-        </properties>
-    </rule>
     <rule ref="category/java/bestpractices.xml/JUnitUseExpected" />
     <rule ref="category/java/bestpractices.xml/LiteralsFirstInComparisons" />
     <rule ref="category/java/bestpractices.xml/LooseCoupling" />
@@ -53,12 +48,19 @@
     <rule ref="category/java/bestpractices.xml/UnusedFormalParameter" />
     <rule ref="category/java/bestpractices.xml/UnusedLocalVariable" />
     <rule ref="category/java/bestpractices.xml/UnusedPrivateField" />
-    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod" />
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod">
+        <properties>
+            <property name="ignoredAnnotations" value="org.springframework.scheduling.annotation.Scheduled" />
+        </properties>
+    </rule>
     <rule ref="category/java/bestpractices.xml/UseCollectionIsEmpty" />
     <rule ref="category/java/bestpractices.xml/UseStandardCharsets" />
     <rule ref="category/java/bestpractices.xml/UseTryWithResources" />
     <rule ref="category/java/bestpractices.xml/UseVarargs" />
     <rule ref="category/java/bestpractices.xml/WhileLoopWithLiteralBoolean" />
+
+<!--  Certain tests require many assertions. It is difficult to specify a number. -->
+<!--    <rule ref="category/java/bestpractices.xml/JUnitTestContainsTooManyAsserts" />-->
 
 <!--  These rules are only meant for Java 10 and below. See the docs for more info.  -->
     <!--    <rule ref="category/java/bestpractices.xml/AccessorClassGeneration" />-->

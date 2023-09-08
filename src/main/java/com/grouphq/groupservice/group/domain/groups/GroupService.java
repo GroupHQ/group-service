@@ -9,7 +9,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * A service performing the main business logic for the Group Service application.
+ * A service for performing business logic related to groups.
  */
 @Service
 public class GroupService {
@@ -27,14 +27,11 @@ public class GroupService {
         return groupRepository.findGroupsByStatus(GroupStatus.ACTIVE);
     }
 
-    public Mono<Integer> expireGroups() {
+    public Mono<Void> expireGroups() {
         final Instant expiryDate = Instant.now().minus(expiryTime, ChronoUnit.SECONDS);
         return groupRepository.expireGroupsPastExpiryDate(expiryDate, GroupStatus.AUTO_DISBANDED);
     }
 
-    /**
-     * Generates a random group that a user may have created.
-     */
     public Group generateGroup() {
         final Faker faker = new Faker();
 

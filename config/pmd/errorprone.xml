@@ -58,7 +58,6 @@
     <rule ref="category/java/errorprone.xml/JUnitStaticSuite" />
     <rule ref="category/java/errorprone.xml/MethodWithSameNameAsEnclosingClass" />
     <rule ref="category/java/errorprone.xml/MisplacedNullCheck" />
-    <rule ref="category/java/errorprone.xml/MissingSerialVersionUID" />
     <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass" />
     <rule ref="category/java/errorprone.xml/MoreThanOneLogger" />
     <rule ref="category/java/errorprone.xml/NonCaseLabelInSwitchStatement" />
@@ -109,6 +108,9 @@
 <!-- Below rules are meant only for Java 1.4 and below. Uncomment them if you're using those Java versions   -->
 <!--        <rule ref="category/java/errorprone.xml/AvoidAssertAsIdentifier" />-->
 <!--    <rule ref="category/java/errorprone.xml/AvoidEnumAsIdentifier" />-->
+
+<!--  Won't need this since we don't plan on serializing at this point. Rule triggers for Exceptions.  -->
+<!--    <rule ref="category/java/errorprone.xml/MissingSerialVersionUID" />-->
 
 <!--  Below rules are deprecated. See docs for more info if you think you need them.  -->
 <!--    <rule ref="category/java/errorprone.xml/BeanMembersShouldSerialize" />-->
