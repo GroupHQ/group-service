@@ -36,6 +36,7 @@ import reactor.test.StepVerifier;
 class GroupControllerIntegrationTest {
 
     static final String JOIN_GROUP_ENDPOINT = "/groups/join";
+    static final String LEAVE_GROUP_ENDPOINT = "/groups/leave";
 
     @Container
     static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
@@ -83,24 +84,17 @@ class GroupControllerIntegrationTest {
     @Test
     @DisplayName("Allow user to join an active group that's not full")
     void allowUserToJoinActiveGroupNotFull() {
-        final Group activeGroupNotFull = Group.of("Title 1", "Description 1", 5, 4,
-            GroupStatus.ACTIVE);
+        final Long groupId = createGroup(Group.of("Title 1", "Description 1",
+            5, 4, GroupStatus.ACTIVE));
 
-        final AtomicReference<Long> groupId = new AtomicReference<>();
-
-        StepVerifier.create(groupRepository.save(activeGroupNotFull))
-            .consumeNextWith(group -> groupId.set(group.id()))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        final GroupJoinRequest groupJoinRequest = new GroupJoinRequest("User 1", groupId.get());
+        final GroupJoinRequest groupJoinRequest = new GroupJoinRequest("User 1", groupId);
 
         webTestClient
             .post()
             .uri(JOIN_GROUP_ENDPOINT)
             .bodyValue(groupJoinRequest)
             .exchange()
-            .expectStatus().is2xxSuccessful()
+            .expectStatus().isCreated()
             .expectBody(Member.class).value(memberCreated -> {
                 assertThat(memberCreated).isNotNull();
                 assertThat(memberCreated.memberStatus())
@@ -109,7 +103,7 @@ class GroupControllerIntegrationTest {
 
         webTestClient
             .get()
-            .uri("/groups/" + groupId.get() + "/members")
+            .uri("/groups/" + groupId + "/members")
             .exchange()
             .expectStatus().is2xxSuccessful()
             .expectBodyList(Member.class).value(members -> {
@@ -119,19 +113,52 @@ class GroupControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("Allow users to leave groups")
+    void leaveGroup() {
+        final Long groupId = createGroup(Group.of("I'm leaving!", "Description ZYZ",
+            5, 4, GroupStatus.ACTIVE));
+
+        // Join group
+        final GroupJoinRequest groupJoinRequest = new GroupJoinRequest("Ephemeral User", groupId);
+        final AtomicReference<Long> memberId = new AtomicReference<>();
+        webTestClient
+            .post()
+            .uri(JOIN_GROUP_ENDPOINT)
+            .bodyValue(groupJoinRequest)
+            .exchange()
+            .expectStatus().isCreated()
+            .expectBody(Member.class).value(memberCreated -> {
+                assertThat(memberCreated).isNotNull();
+                assertThat(memberCreated.memberStatus())
+                    .isEqualTo(MemberStatus.ACTIVE);
+                memberId.set(memberCreated.id());
+            });
+
+        // Leave group
+        final GroupLeaveRequest groupLeaveRequest = new GroupLeaveRequest(memberId.get());
+        webTestClient
+            .post()
+            .uri(LEAVE_GROUP_ENDPOINT)
+            .bodyValue(groupLeaveRequest)
+            .exchange()
+            .expectStatus().isNoContent();
+
+        // Make sure member is gone
+        webTestClient
+            .get()
+            .uri("/groups/" + groupId + "/members")
+            .exchange()
+            .expectStatus().is2xxSuccessful()
+            .expectBodyList(Member.class).value(members -> assertThat(members).hasSize(0));
+    }
+
+    @Test
     @DisplayName("Do not allow users to join non-active groups")
     void receiveGroupNotActiveExceptionWhenTryingToJoinNonActiveGroup() {
-        final Group nonActiveGroup = Group.of("Title 2", "Description 2", 5, 4,
-            GroupStatus.DISBANDED);
+        final Long groupId = createGroup(Group.of("Title 2", "Description 2",
+            5, 4, GroupStatus.DISBANDED));
 
-        final AtomicReference<Long> groupId = new AtomicReference<>();
-
-        StepVerifier.create(groupRepository.save(nonActiveGroup))
-            .consumeNextWith(group -> groupId.set(group.id()))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        final GroupJoinRequest groupJoinRequest = new GroupJoinRequest("User 2", groupId.get());
+        final GroupJoinRequest groupJoinRequest = new GroupJoinRequest("User 2", groupId);
 
         webTestClient
             .post()
@@ -147,17 +174,10 @@ class GroupControllerIntegrationTest {
     @Test
     @DisplayName("Do not allow users to join full groups")
     void receiveGroupIsFullExceptionWhenTryingToJoinFullGroup() {
-        final Group fullGroup = Group.of("Title 3", "Description 3", 5, 5,
-            GroupStatus.ACTIVE);
+        final Long groupId = createGroup(Group.of("Title 3", "Description 3",
+            5, 5, GroupStatus.ACTIVE));
 
-        final AtomicReference<Long> groupId = new AtomicReference<>();
-
-        StepVerifier.create(groupRepository.save(fullGroup))
-            .consumeNextWith(group -> groupId.set(group.id()))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        final GroupJoinRequest groupJoinRequest = new GroupJoinRequest("User 3", groupId.get());
+        final GroupJoinRequest groupJoinRequest = new GroupJoinRequest("User 3", groupId);
 
         webTestClient
             .post()
@@ -173,17 +193,10 @@ class GroupControllerIntegrationTest {
     @Test
     @DisplayName("Do not allow users to join non-active and full groups.")
     void receiveGroupNotActiveExceptionWhenTryingToJoinNonActiveFullGroup() {
-        final Group fullGroup = Group.of("Title 4", "Description 4", 5, 5,
-            GroupStatus.DISBANDED);
+        final Long groupId = createGroup(Group.of("Title 4", "Description 4",
+            5, 5, GroupStatus.DISBANDED));
 
-        final AtomicReference<Long> groupId = new AtomicReference<>();
-
-        StepVerifier.create(groupRepository.save(fullGroup))
-            .consumeNextWith(group -> groupId.set(group.id()))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        final GroupJoinRequest groupJoinRequest = new GroupJoinRequest("User 4", groupId.get());
+        final GroupJoinRequest groupJoinRequest = new GroupJoinRequest("User 4", groupId);
 
         webTestClient
             .post()
@@ -194,6 +207,17 @@ class GroupControllerIntegrationTest {
             .expectBody(String.class).value(message ->
                 assertThat(message).isEqualTo(
                     "Cannot save member because this group is not active"));
+    }
+
+    private Long createGroup(Group newGroup) {
+        final AtomicReference<Long> groupId = new AtomicReference<>();
+
+        StepVerifier.create(groupRepository.save(newGroup))
+            .consumeNextWith(group -> groupId.set(group.id()))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        return groupId.get();
     }
 
 }

@@ -8,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import com.grouphq.groupservice.group.domain.groups.Group;
 import com.grouphq.groupservice.group.domain.groups.GroupRepository;
 import com.grouphq.groupservice.group.domain.members.exceptions.GroupIsFullException;
-import com.grouphq.groupservice.group.domain.members.exceptions.GroupNotActiveException;
 import com.grouphq.groupservice.group.domain.members.exceptions.MemberNotActiveException;
 import com.grouphq.groupservice.group.testutility.GroupTestUtility;
 import java.time.Duration;
@@ -85,6 +84,20 @@ class MemberServiceTest {
     }
 
     @Test
+    @DisplayName("Removes a member from their group")
+    void removesMemberFromTheirGroup() {
+        final Long memberId = 1234L;
+
+        given(memberRepository.removeMemberFromGroup(memberId)).willReturn(Mono.empty());
+
+        StepVerifier.create(memberService.removeMember(memberId))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        verify(memberRepository, times(1)).removeMemberFromGroup(memberId);
+    }
+
+    @Test
     @DisplayName("Does not create a member if group to join is not active")
     void disallowNonActiveGroupJoining() {
         given(groupRepository.findById(group.id())).willReturn(Mono.just(group));
@@ -95,7 +108,7 @@ class MemberServiceTest {
         );
 
         StepVerifier.create(memberService.joinGroup(USERNAME, group.id()))
-            .expectErrorMatches(throwable -> throwable instanceof GroupNotActiveException)
+            .expectErrorMatches(throwable -> throwable instanceof MemberNotActiveException)
             .verify(Duration.ofSeconds(1));
     }
 
@@ -115,28 +128,13 @@ class MemberServiceTest {
     }
 
     @Test
-    @DisplayName("Does not update a member if group to join is not active")
-    void disallowMemberUpdateWhenGroupIsNonActive() {
-        given(groupRepository.findById(group.id())).willReturn(Mono.just(group));
-
-        given(memberRepository.save(any(Member.class))).willThrow(
-            new DataAccessResourceFailureException(
-                "Cannot update member because member status is not ACTIVE")
-        );
-
-        StepVerifier.create(memberService.joinGroup(USERNAME, group.id()))
-            .expectErrorMatches(throwable -> throwable instanceof GroupNotActiveException)
-            .verify(Duration.ofSeconds(1));
-    }
-
-    @Test
     @DisplayName("Does not update a member if member is not active")
     void disallowMemberUpdateWhenMemberIsNonActive() {
         given(groupRepository.findById(group.id())).willReturn(Mono.just(group));
 
         given(memberRepository.save(any(Member.class))).willThrow(
             new DataAccessResourceFailureException(
-                "Cannot update member because group status is not ACTIVE")
+                "Cannot update member because member status is not ACTIVE")
         );
 
         StepVerifier.create(memberService.joinGroup(USERNAME, group.id()))

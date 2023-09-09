@@ -2,6 +2,8 @@ package com.grouphq.groupservice.group.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.grouphq.groupservice.config.SecurityConfig;
 import com.grouphq.groupservice.group.domain.groups.Group;
@@ -33,6 +35,7 @@ import reactor.core.publisher.Mono;
 class GroupControllerTest {
 
     static final String JOIN_GROUP_ENDPOINT = "/groups/join";
+    static final String LEAVE_GROUP_ENDPOINT = "/groups/leave";
 
     @Autowired
     WebTestClient webTestClient;
@@ -44,7 +47,7 @@ class GroupControllerTest {
     MemberService memberService;
 
     @Test
-    @DisplayName("When there are active groups, then return a list of active groups")
+    @DisplayName("When there are active groups, then return a list of active groupst")
     void returnActiveGroups() {
         final Group[] testGroups = {
             GroupTestUtility.generateFullGroupDetails(),
@@ -64,6 +67,8 @@ class GroupControllerTest {
                     group.status().equals(GroupStatus.ACTIVE),
                     "All groups received should be active");
             });
+
+        verify(groupService, times(1)).getGroups();
     }
 
     @Test
@@ -86,12 +91,32 @@ class GroupControllerTest {
             .uri(JOIN_GROUP_ENDPOINT)
             .bodyValue(groupJoinRequest)
             .exchange()
-            .expectStatus().is2xxSuccessful()
+            .expectStatus().isCreated()
             .expectBody(Member.class).value(memberCreated -> {
                 assertThat(memberCreated).isNotNull();
                 assertThat(memberCreated.memberStatus())
                     .isEqualTo(MemberStatus.ACTIVE);
             });
+
+        verify(memberService, times(1)).joinGroup(
+            groupJoinRequest.username(), groupJoinRequest.groupId());
+    }
+
+    @Test
+    @DisplayName("Allow users to leave groups")
+    void leaveGroup() {
+        final GroupLeaveRequest groupLeaveRequest = new GroupLeaveRequest(1234L);
+
+        given(memberService.removeMember(groupLeaveRequest.memberId())).willReturn(Mono.empty());
+
+        webTestClient
+            .post()
+            .uri(LEAVE_GROUP_ENDPOINT)
+            .bodyValue(groupLeaveRequest)
+            .exchange()
+            .expectStatus().isNoContent();
+
+        verify(memberService, times(1)).removeMember(groupLeaveRequest.memberId());
     }
 
     @Test
@@ -112,6 +137,9 @@ class GroupControllerTest {
             .expectBody(String.class).value(message ->
                     assertThat(message).isEqualTo(
                         "Cannot save member because this group is not active"));
+
+        verify(memberService, times(1)).joinGroup(
+            groupJoinRequest.username(), groupJoinRequest.groupId());
     }
 
     @Test
@@ -132,6 +160,9 @@ class GroupControllerTest {
             .expectBody(String.class).value(message ->
                 assertThat(message).isEqualTo(
                     "Cannot save member because this group is full"));
+
+        verify(memberService, times(1)).joinGroup(
+            groupJoinRequest.username(), groupJoinRequest.groupId());
     }
 
     @Test
@@ -155,5 +186,8 @@ class GroupControllerTest {
                     The server has encountered an unexpected error.
                     Rest assured, this will be investigated.
                     """));
+
+        verify(memberService, times(1)).joinGroup(
+            groupJoinRequest.username(), groupJoinRequest.groupId());
     }
 }

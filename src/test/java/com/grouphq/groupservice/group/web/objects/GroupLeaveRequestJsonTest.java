@@ -1,7 +1,8 @@
-package com.grouphq.groupservice.group.web;
+package com.grouphq.groupservice.group.web.objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.grouphq.groupservice.group.web.GroupLeaveRequest;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -12,21 +13,20 @@ import org.springframework.boot.test.json.JacksonTester;
 
 @JsonTest
 @Tag("UnitTest")
-class GroupJoinRequestJsonTest {
+class GroupLeaveRequestJsonTest {
 
     @Autowired
-    private JacksonTester<GroupJoinRequest> json;
+    private JacksonTester<GroupLeaveRequest> json;
 
     @Test
-    @DisplayName("Correctly deserializes data to GroupJoinRequest object")
+    @DisplayName("Correctly deserializes data to GroupLeaveRequest object")
     void deserializeToObject() throws IOException {
         final String content = """
             {
-                "username": "User",
-                "groupId": 1234
+                "memberId": 1234
             }
             """;
         assertThat(json.parse(content))
-            .usingRecursiveComparison().isEqualTo(new GroupJoinRequest("User", 1234L));
+            .usingRecursiveComparison().isEqualTo(new GroupLeaveRequest(1234L));
     }
 }
