@@ -2,7 +2,6 @@ package com.grouphq.groupservice.group.web.objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.grouphq.groupservice.group.web.GroupJoinRequest;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

@@ -25,7 +25,11 @@
     <rule ref="category/java/design.xml/DataClass" />
     <rule ref="category/java/design.xml/DoNotExtendJavaLangError" />
     <rule ref="category/java/design.xml/ExceptionAsFlowControl" />
-    <rule ref="category/java/design.xml/ExcessiveImports" />
+    <rule ref="category/java/design.xml/ExcessiveImports">
+        <properties>
+            <property name="minimum" value="40.0" />
+        </properties>
+    </rule>
     <rule ref="category/java/design.xml/ExcessiveParameterList" />
     <rule ref="category/java/design.xml/ExcessivePublicCount" />
     <rule ref="category/java/design.xml/FinalFieldCouldBeStatic" />

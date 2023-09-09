@@ -16,7 +16,11 @@ import com.grouphq.groupservice.group.domain.members.exceptions.GroupIsFullExcep
 import com.grouphq.groupservice.group.domain.members.exceptions.GroupNotActiveException;
 import com.grouphq.groupservice.group.domain.members.exceptions.InternalServerError;
 import com.grouphq.groupservice.group.testutility.GroupTestUtility;
+import com.grouphq.groupservice.group.web.objects.GroupJoinRequest;
+import com.grouphq.groupservice.group.web.objects.GroupLeaveRequest;
+import com.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -47,7 +51,7 @@ class GroupControllerTest {
     MemberService memberService;
 
     @Test
-    @DisplayName("When there are active groups, then return a list of active groupst")
+    @DisplayName("When there are active groups, then return a list of active groups")
     void returnActiveGroups() {
         final Group[] testGroups = {
             GroupTestUtility.generateFullGroupDetails(),
@@ -69,6 +73,40 @@ class GroupControllerTest {
             });
 
         verify(groupService, times(1)).getGroups();
+    }
+
+    @Test
+    @DisplayName("Allow users to retrieve active group members as public")
+    void retrieveActiveGroupMembersAsPublic() {
+        final Member[] members = {
+            GroupTestUtility.generateFullMemberDetails(),
+            GroupTestUtility.generateFullMemberDetails(),
+            GroupTestUtility.generateFullMemberDetails()
+        };
+
+        given(memberService.getActiveMembers(1234L))
+            .willReturn(Flux.just(members));
+
+        final List<PublicMember> publicMembers = List.of(
+            new PublicMember(members[0].username(), members[0].groupId(),
+                members[0].memberStatus(), members[0].joinedDate(), members[0].exitedDate()),
+            new PublicMember(members[1].username(), members[1].groupId(),
+                members[1].memberStatus(), members[1].joinedDate(), members[1].exitedDate()),
+            new PublicMember(members[2].username(), members[2].groupId(),
+                members[2].memberStatus(), members[2].joinedDate(), members[2].exitedDate())
+        );
+
+        webTestClient
+            .get()
+            .uri("/groups/1234/members")
+            .exchange()
+            .expectStatus().is2xxSuccessful()
+            .expectBodyList(PublicMember.class).value(retrievedMembers ->
+                assertThat(retrievedMembers)
+                    .containsExactlyInAnyOrderElementsOf(publicMembers));
+
+        verify(memberService, times(1))
+            .getActiveMembers(1234L);
     }
 
     @Test
