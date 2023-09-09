@@ -6,7 +6,6 @@ import com.grouphq.groupservice.group.domain.members.exceptions.GroupNotActiveEx
 import com.grouphq.groupservice.group.domain.members.exceptions.InternalServerError;
 import com.grouphq.groupservice.group.domain.members.exceptions.MemberNotActiveException;
 import java.util.Map;
-import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -23,8 +22,6 @@ public class MemberService {
         Map.entry("Cannot save member with group because the group is full",
             new GroupIsFullException("Cannot save member")),
         Map.entry("Cannot update member because member status is not ACTIVE",
-            new GroupNotActiveException("Cannot update member")),
-        Map.entry("Cannot update member because group status is not ACTIVE",
             new MemberNotActiveException("Cannot update member"))
     );
 
@@ -44,13 +41,12 @@ public class MemberService {
     public Mono<Member> joinGroup(String username, Long groupId) {
         return groupRepository.findById(groupId)
             .flatMap(group -> memberRepository.save(Member.of(username, groupId)))
-            .onErrorMap(throwable -> {
-                if (throwable instanceof DataAccessResourceFailureException) {
-                    return getBusinessException(throwable);
-                } else {
-                    return new InternalServerError();
-                }
-            });
+            .onErrorMap(this::getBusinessException);
+    }
+
+    public Mono<Void> removeMember(Long memberId) {
+        return memberRepository.removeMemberFromGroup(memberId)
+            .onErrorMap(this::getBusinessException);
     }
 
     private RuntimeException getBusinessException(Throwable throwable) {

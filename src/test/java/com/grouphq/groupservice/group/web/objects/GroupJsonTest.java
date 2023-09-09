@@ -1,4 +1,4 @@
-package com.grouphq.groupservice.group.web;
+package com.grouphq.groupservice.group.web.objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

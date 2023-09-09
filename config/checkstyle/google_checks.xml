@@ -353,6 +353,7 @@
                 value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF,
                       RECORD_DEF, ANNOTATION_DEF"/>
       <property name="excludeScope" value="nothing"/>
+      <property name="skipAnnotations" value="Tag"/>
     </module>
     <module name="MethodName">
       <property name="format" value="^[a-z][a-z0-9]\w*$"/>

@@ -1,5 +1,7 @@
 package com.grouphq.groupservice.group.domain.members;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.grouphq.groupservice.config.DataConfig;
 import com.grouphq.groupservice.group.domain.groups.Group;
 import com.grouphq.groupservice.group.domain.groups.GroupRepository;
@@ -105,7 +107,7 @@ class MemberRepositoryTest {
     void joinGroup() {
         final Member member = addMemberToGroup(USERNAME);
 
-        final int currentGroupSize = group.get().currentGroupSize();
+        final int groupSizeBeforeJoining = group.get().currentGroupSize();
 
         StepVerifier.create(memberRepository.save(member))
             .expectNextMatches(memberSaved -> memberSaved.groupId().equals(group.get().id()))
@@ -113,8 +115,8 @@ class MemberRepositoryTest {
             .verify(Duration.ofSeconds(1));
 
         StepVerifier.create(groupRepository.findById(group.get().id()))
-            .expectNextMatches(retrievedGroup ->
-                currentGroupSize + 1 == retrievedGroup.currentGroupSize())
+            .expectNextMatches(upToDateGroup ->
+                groupSizeBeforeJoining + 1 == upToDateGroup.currentGroupSize())
             .expectComplete()
             .verify(Duration.ofSeconds(1));
     }
@@ -182,49 +184,6 @@ class MemberRepositoryTest {
     }
 
     @Test
-    @DisplayName("Does not update a member if group to join is not active")
-    void disallowMemberUpdateWithNonActiveGroup() {
-        final AtomicReference<Group> group = new AtomicReference<>(new Group(
-            1234L, "Title", "Desc", 10, 5,
-            GroupStatus.ACTIVE, Instant.now(), Instant.now(), Instant.now(),
-            OWNER, OWNER, 0
-        ));
-
-        StepVerifier.create(groupRepository.save(group.get()))
-            .consumeNextWith(group::set)
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        this.group = group;
-
-        final Member member = addMemberToGroup(USERNAME);
-
-        final Group nonActiveGroup = new Group(
-            group.get().id(), group.get().title(), group.get().description(),
-            group.get().maxGroupSize(), group.get().currentGroupSize(), GroupStatus.DISBANDED,
-            group.get().lastActive(), group.get().createdDate(), group.get().lastModifiedDate(),
-            group.get().createdBy(), group.get().lastModifiedBy(), group.get().version()
-        );
-
-        StepVerifier.create(groupRepository.save(nonActiveGroup))
-            .expectNextMatches(savedGroup -> savedGroup.id().equals(nonActiveGroup.id()))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        final Member memberWithChanges = new Member(
-            member.id(), member.username(), member.groupId(), MemberStatus.ACTIVE,
-            member.joinedDate(), member.exitedDate(), member.createdDate(),
-            member.lastModifiedDate(), member.createdBy(),
-            member.lastModifiedBy(), member.version()
-        );
-
-        StepVerifier.create(memberRepository.save(memberWithChanges))
-            .expectErrorMatches(throwable -> throwable.getMessage().contains(
-                "Cannot update member because group status is not ACTIVE"))
-            .verify(Duration.ofSeconds(1));
-    }
-
-    @Test
     @DisplayName("Does not update a member if member is not active")
     void disallowMemberUpdateWithMemberNonActive() {
         final AtomicReference<Member> member = new AtomicReference<>(addMemberToGroup(USERNAME));
@@ -267,6 +226,90 @@ class MemberRepositoryTest {
             .expectNextMatches(retrievedMember  -> USERNAME.equals(retrievedMember.username()))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
+    }
+
+    @Test
+    @DisplayName("Remove member from group and sync data")
+    void removeMemberFromGroupAndSyncData() {
+        final Member memberOfGroup = addMemberToGroup(USERNAME);
+
+        StepVerifier.create(groupRepository.findById(group.get().id()))
+            .consumeNextWith(group::set)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        final int groupSizeBeforeRemoving = group.get().currentGroupSize();
+
+        StepVerifier.create(memberRepository.removeMemberFromGroup(memberOfGroup.id()))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        StepVerifier.create(memberRepository.getActiveMembersByGroup(group.get().id()))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        StepVerifier.create(groupRepository.findById(group.get().id()))
+            .expectNextMatches(upToDateGroup ->
+                groupSizeBeforeRemoving - 1 == upToDateGroup.currentGroupSize())
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        StepVerifier.create(memberRepository.findById(memberOfGroup.id()))
+            .consumeNextWith(member -> {
+                assertThat(member.exitedDate()).isNotNull();
+                assertThat(member.memberStatus()).isEqualTo(MemberStatus.LEFT);
+                assertThat(member.exitedDate()).isAfter(Instant.now().minusSeconds(1));
+            })
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+    }
+
+    @Test
+    @DisplayName("Set members' status to AUTO_LEFT if group is disbanded and sync data")
+    void setMembersStatusToAutoLeftIfGroupIsDisbandedAndSyncData() {
+        addMemberToGroup("Member 1");
+        addMemberToGroup("Member 2");
+        addMemberToGroup("Member 3");
+
+        StepVerifier.create(groupRepository.findById(group.get().id()))
+            .consumeNextWith(group::set)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        final int currentGroupSizeBeforeDisbanding = group.get().currentGroupSize();
+
+        StepVerifier.create(groupRepository.save(new Group(
+                group.get().id(), group.get().title(), group.get().description(),
+                group.get().maxGroupSize(), group.get().currentGroupSize(), GroupStatus.DISBANDED,
+                group.get().lastActive(), group.get().createdDate(), group.get().lastModifiedDate(),
+                group.get().createdBy(), group.get().lastModifiedBy(), group.get().version())))
+            .consumeNextWith(group::set)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        StepVerifier.create(memberRepository.getMembersByGroup(group.get().id()))
+            .consumeNextWith(member -> {
+                assertThat(member.memberStatus()).isEqualTo(MemberStatus.AUTO_LEFT);
+                assertThat(member.exitedDate()).isAfter(Instant.now().minusSeconds(1));
+            })
+            .consumeNextWith(member -> {
+                assertThat(member.memberStatus()).isEqualTo(MemberStatus.AUTO_LEFT);
+                assertThat(member.exitedDate()).isAfter(Instant.now().minusSeconds(1));
+            })
+            .consumeNextWith(member -> {
+                assertThat(member.memberStatus()).isEqualTo(MemberStatus.AUTO_LEFT);
+                assertThat(member.exitedDate()).isAfter(Instant.now().minusSeconds(1));
+            })
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        StepVerifier.create(groupRepository.findById(group.get().id()))
+            .consumeNextWith(group::set)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        assertThat(group.get().currentGroupSize())
+            .isEqualTo(currentGroupSizeBeforeDisbanding - 3);
     }
 
     private Member addMemberToGroup(String username) {
