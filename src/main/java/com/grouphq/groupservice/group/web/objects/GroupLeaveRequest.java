@@ -1,4 +1,4 @@
-package com.grouphq.groupservice.group.web;
+package com.grouphq.groupservice.group.web.objects;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

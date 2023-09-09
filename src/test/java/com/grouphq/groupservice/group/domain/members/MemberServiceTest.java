@@ -57,7 +57,7 @@ class MemberServiceTest {
 
         given(memberRepository.getActiveMembersByGroup(group.id())).willReturn(Flux.just(members));
 
-        StepVerifier.create(memberService.getMembers(group.id()))
+        StepVerifier.create(memberService.getActiveMembers(group.id()))
             .expectNext(members[0], members[1], members[2])
             .expectComplete()
             .verify(Duration.ofSeconds(1));

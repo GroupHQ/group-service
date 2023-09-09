@@ -3,7 +3,6 @@ package com.grouphq.groupservice.group.web.objects;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javafaker.Faker;
-import com.grouphq.groupservice.group.web.GroupJoinRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;

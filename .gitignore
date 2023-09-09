@@ -5,6 +5,7 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 .pre-commit-config.yaml
+coverage_reports
 
 ### STS ###
 .apt_generated

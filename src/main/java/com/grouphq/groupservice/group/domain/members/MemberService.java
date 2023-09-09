@@ -34,7 +34,7 @@ public class MemberService {
         this.groupRepository = groupRepository;
     }
 
-    public Flux<Member> getMembers(Long groupId) {
+    public Flux<Member> getActiveMembers(Long groupId) {
         return memberRepository.getActiveMembersByGroup(groupId);
     }
 

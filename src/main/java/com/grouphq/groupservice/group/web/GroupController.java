@@ -4,6 +4,9 @@ import com.grouphq.groupservice.group.domain.groups.Group;
 import com.grouphq.groupservice.group.domain.groups.GroupService;
 import com.grouphq.groupservice.group.domain.members.Member;
 import com.grouphq.groupservice.group.domain.members.MemberService;
+import com.grouphq.groupservice.group.web.objects.GroupJoinRequest;
+import com.grouphq.groupservice.group.web.objects.GroupLeaveRequest;
+import com.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,10 +41,14 @@ public class GroupController {
     }
 
     @GetMapping("/{groupId}/members")
-    public Flux<Member> getGroupMembers(
+    public Flux<PublicMember> getActiveGroupMembers(
         @PathVariable Long groupId
     ) {
-        return memberService.getMembers(groupId);
+        return memberService.getActiveMembers(groupId)
+            .map(member -> new PublicMember(
+                member.username(), member.groupId(), member.memberStatus(),
+                member.joinedDate(), member.exitedDate()
+            ));
     }
 
     @PostMapping("/join")

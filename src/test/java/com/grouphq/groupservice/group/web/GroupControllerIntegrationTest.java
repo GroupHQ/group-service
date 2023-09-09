@@ -8,8 +8,14 @@ import com.grouphq.groupservice.group.domain.groups.Group;
 import com.grouphq.groupservice.group.domain.groups.GroupRepository;
 import com.grouphq.groupservice.group.domain.groups.GroupStatus;
 import com.grouphq.groupservice.group.domain.members.Member;
+import com.grouphq.groupservice.group.domain.members.MemberRepository;
 import com.grouphq.groupservice.group.domain.members.MemberStatus;
+import com.grouphq.groupservice.group.web.objects.GroupJoinRequest;
+import com.grouphq.groupservice.group.web.objects.GroupLeaveRequest;
+import com.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -26,6 +32,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 @SpringBootTest
@@ -47,6 +54,9 @@ class GroupControllerIntegrationTest {
 
     @Autowired
     GroupRepository groupRepository;
+
+    @Autowired
+    MemberRepository memberRepository;
 
     @Autowired
     WebTestClient webTestClient;
@@ -101,15 +111,58 @@ class GroupControllerIntegrationTest {
                     .isEqualTo(MemberStatus.ACTIVE);
             });
 
+        StepVerifier.create(memberRepository.getActiveMembersByGroup(groupId))
+            .expectNextMatches(member -> "User 1".equals(member.username()))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+    }
+
+    @Test
+    @DisplayName("Allow users to retrieve active group members as public")
+    void retrieveActiveGroupMembersAsPublic() {
+        final Long groupId = createGroup(Group.of("Populated Group", "We got pumpkins!",
+            5, 0, GroupStatus.ACTIVE));
+
+        final Member[] members = {
+            Member.of("User 1", groupId),
+            Member.of("User 2", groupId),
+            Member.of("User 3", groupId)
+        };
+
+        StepVerifier.create(memberRepository.saveAll(Flux.just(members)))
+            .expectNextCount(3)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        final List<Member> memberList = new ArrayList<>();
+
+        StepVerifier.create(memberRepository.getActiveMembersByGroup(groupId))
+            .recordWith(() -> memberList)
+            .expectNextCount(3)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        final List<PublicMember> publicMembers = List.of(
+            new PublicMember(memberList.get(0).username(), memberList.get(0).groupId(),
+                memberList.get(0).memberStatus(), memberList.get(0).joinedDate(),
+                memberList.get(0).exitedDate()),
+            new PublicMember(memberList.get(1).username(), memberList.get(1).groupId(),
+                memberList.get(1).memberStatus(), memberList.get(1).joinedDate(),
+                memberList.get(1).exitedDate()),
+            new PublicMember(memberList.get(2).username(), memberList.get(2).groupId(),
+                memberList.get(2).memberStatus(), memberList.get(2).joinedDate(),
+                memberList.get(2).exitedDate())
+        );
+
         webTestClient
             .get()
             .uri("/groups/" + groupId + "/members")
             .exchange()
             .expectStatus().is2xxSuccessful()
-            .expectBodyList(Member.class).value(members -> {
-                assertThat(members).hasSize(1);
-                assertThat(members.get(0).username()).isEqualTo("User 1");
-            });
+            .expectBodyList(PublicMember.class).value(retrievedMembers ->
+                assertThat(retrievedMembers)
+                    .containsExactlyInAnyOrderElementsOf(publicMembers)
+            );
     }
 
     @Test
@@ -144,12 +197,9 @@ class GroupControllerIntegrationTest {
             .expectStatus().isNoContent();
 
         // Make sure member is gone
-        webTestClient
-            .get()
-            .uri("/groups/" + groupId + "/members")
-            .exchange()
-            .expectStatus().is2xxSuccessful()
-            .expectBodyList(Member.class).value(members -> assertThat(members).hasSize(0));
+        StepVerifier.create(memberRepository.getActiveMembersByGroup(groupId))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
     }
 
     @Test

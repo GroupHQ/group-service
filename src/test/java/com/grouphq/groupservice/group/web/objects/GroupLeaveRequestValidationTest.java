@@ -2,7 +2,6 @@ package com.grouphq.groupservice.group.web.objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.grouphq.groupservice.group.web.GroupLeaveRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
