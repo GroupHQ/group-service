@@ -159,10 +159,19 @@ class GroupControllerIntegrationTest {
             .uri("/groups/" + groupId + "/members")
             .exchange()
             .expectStatus().is2xxSuccessful()
-            .expectBodyList(PublicMember.class).value(retrievedMembers ->
+            .expectBodyList(PublicMember.class).value(retrievedMembers -> {
                 assertThat(retrievedMembers)
-                    .containsExactlyInAnyOrderElementsOf(publicMembers)
-            );
+                    .containsExactlyInAnyOrderElementsOf(publicMembers);
+                assertThat(retrievedMembers).isSortedAccordingTo((memberA, memberB) -> {
+                    if (memberA.joinedDate().isBefore(memberB.joinedDate())) {
+                        return -1;
+                    } else if (memberA.joinedDate().isAfter(memberB.joinedDate())) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                });
+            });
     }
 
     @Test
