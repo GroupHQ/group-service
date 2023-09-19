@@ -2,13 +2,11 @@ package com.grouphq.groupservice;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.grouphq.groupservice.config.DataConfig;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -21,7 +19,6 @@ import org.testcontainers.utility.DockerImageName;
  *
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(DataConfig.class)
 @Testcontainers
 @Tag("IntegrationTest")
 class GroupServiceApplicationTests {

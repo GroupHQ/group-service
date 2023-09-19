@@ -2,27 +2,23 @@ package com.grouphq.groupservice.cucumber.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.grouphq.groupservice.config.DataConfig;
-import com.grouphq.groupservice.config.SecurityConfig;
 import com.grouphq.groupservice.group.domain.groups.Group;
 import com.grouphq.groupservice.group.domain.groups.GroupRepository;
 import com.grouphq.groupservice.group.domain.groups.GroupStatus;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.junit.jupiter.api.Tag;
+import java.time.Duration;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.List;
-
-@DataR2dbcTest
-@Import({DataConfig.class, SecurityConfig.class})
-@Tag("AcceptanceTest")
+@SpringBootTest
+@AutoConfigureWebTestClient
 public class ActiveGroupsPolicy {
 
     @Autowired
@@ -45,12 +41,14 @@ public class ActiveGroupsPolicy {
         };
 
         StepVerifier.create(
-            Mono.when(
-                groupRepository.save(groups[0]),
-                groupRepository.save(groups[1]),
-                groupRepository.save(groups[2])
+                Mono.when(
+                    groupRepository.save(groups[0]),
+                    groupRepository.save(groups[1]),
+                    groupRepository.save(groups[2])
+                )
             )
-        ).verifyComplete();
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
     }
 
     @When("I request groups")

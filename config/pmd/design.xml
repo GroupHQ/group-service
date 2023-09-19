@@ -25,11 +25,6 @@
     <rule ref="category/java/design.xml/DataClass" />
     <rule ref="category/java/design.xml/DoNotExtendJavaLangError" />
     <rule ref="category/java/design.xml/ExceptionAsFlowControl" />
-    <rule ref="category/java/design.xml/ExcessiveImports">
-        <properties>
-            <property name="minimum" value="40.0" />
-        </properties>
-    </rule>
     <rule ref="category/java/design.xml/ExcessiveParameterList" />
     <rule ref="category/java/design.xml/ExcessivePublicCount" />
     <rule ref="category/java/design.xml/FinalFieldCouldBeStatic" />
@@ -76,5 +71,8 @@
 <!--  Below rules are deprecated. See docs for more info if you think you need them.  -->
 <!-- DEPRECATED    <rule ref="category/java/design.xml/ExcessiveClassLength" />-->
 <!-- DEPRECATED    <rule ref="category/java/design.xml/ExcessiveMethodLength" />-->
+
+<!-- Tests require this limit to be arbitrarily high, rendering this rule useless.  -->
+<!--    <rule ref="category/java/design.xml/ExcessiveImports" />-->
 
 </ruleset>

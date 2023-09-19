@@ -9,13 +9,13 @@ server:
   netty:
     connection-timeout: 2s
     idle-timeout: 15s
-
 group:
-  expiry-checker:
+  cutoff-checker:
     time: 1800
     initial-check-delay: 0
     check-interval: 300
   loader:
+    enabled: false
     initial-group-delay: 0
     initial-group-size: 3
     periodic-group-addition-interval: 300
@@ -38,3 +38,40 @@ spring:
     user: ${spring.r2dbc.username}
     password: ${spring.r2dbc.password}
     url: jdbc:postgresql://localhost:5432/grouphq_group
+  cloud:
+    function:
+      definition: |
+        handleGroupCreateRequests;
+        handleGroupStatusRequests;
+        handleGroupJoinRequests;
+        handleGroupLeaveRequests;
+        publishProcessedEvents
+    stream:
+      bindings:
+        handleGroupCreateRequests-in-0:
+          destination: group-create-requests
+          group: ${spring.application.name}
+        handleGroupStatusRequests-in-0:
+          destination: group-status-requests
+          group: ${spring.application.name}
+        handleGroupJoinRequests-in-0:
+          destination: group-join-requests
+          group: ${spring.application.name}
+        handleGroupLeaveRequests-in-0:
+          destination: group-leave-requests
+          group: ${spring.application.name}
+        publishProcessedEvents-out-0:
+          destination: group-event-results
+  integration:
+    poller:
+      fixed-delay: 50
+  rabbitmq:
+    host: {$SPRING_RABBITMQ_HOST:localhost}
+    port: 5672
+    username: user
+    password: password
+    connection-timeout: 5s
+logging:
+  level:
+    root: info
+    com.grouphq: debug

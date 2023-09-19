@@ -1,4 +1,4 @@
-package com.grouphq.groupservice.group.domain.members.exceptions;
+package com.grouphq.groupservice.group.domain.exceptions;
 
 /**
  * Business exception informing that an action cannot be completed
@@ -6,6 +6,6 @@ package com.grouphq.groupservice.group.domain.members.exceptions;
  */
 public class GroupNotActiveException extends RuntimeException {
     public GroupNotActiveException(String action) {
-        super(action.trim() + " because this group is not active");
+        super(action.trim() + " because this group is not active.");
     }
 }

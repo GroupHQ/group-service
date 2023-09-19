@@ -52,11 +52,6 @@
             <property name="minimum" value="2" />
         </properties>
     </rule>
-    <rule ref="category/java/codestyle.xml/TooManyStaticImports">
-        <properties>
-            <property name="maximumStaticImports" value="5" />
-        </properties>
-    </rule>
     <rule ref="category/java/codestyle.xml/UnnecessaryAnnotationValueElement" />
     <rule ref="category/java/codestyle.xml/UnnecessaryCast" />
     <rule ref="category/java/codestyle.xml/UnnecessaryConstructor" />
@@ -86,5 +81,9 @@
 <!--  This is a new rule belonging to PMD 7.0.0, which Gradle's PMD plugin doesn't currently support.
       Add it once Gradle can use PMD 7.0.0 or higher. -->
 <!--    <rule ref="category/java/codestyle.xml/UnnecessaryBoxing" /> Uncomment this once 7.0.0 is released-->
+
+
+<!-- Tests require this limit to be arbitrarily high, rendering this rule useless.  -->
+<!--    <rule ref="category/java/codestyle.xml/TooManyStaticImports" />-->
 
 </ruleset>
