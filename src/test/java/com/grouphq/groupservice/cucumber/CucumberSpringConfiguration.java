@@ -15,13 +15,15 @@ import org.testcontainers.utility.DockerImageName;
  * Configuration for linking Cucumber with the Spring context.
  */
 @CucumberContextConfiguration
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {"group.loader.enabled=true"})
 @AutoConfigureWebTestClient
 @ContextConfiguration(initializers = CucumberSpringConfiguration.Initializer.class)
 public class CucumberSpringConfiguration {
     static class Initializer
         implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-        static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
+        private static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres:14.4"));
 
         static {

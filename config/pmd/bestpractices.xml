@@ -9,7 +9,6 @@
         Custom Rules based on Best Practices Ruleset Category
     </description>
 
-    <rule ref="category/java/bestpractices.xml/AbstractClassWithoutAbstractMethod" />
     <rule ref="category/java/bestpractices.xml/ArrayIsStoredDirectly" />
     <rule ref="category/java/bestpractices.xml/AvoidMessageDigestField" />
     <rule ref="category/java/bestpractices.xml/AvoidPrintStackTrace" />
@@ -50,7 +49,8 @@
     <rule ref="category/java/bestpractices.xml/UnusedPrivateField" />
     <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod">
         <properties>
-            <property name="ignoredAnnotations" value="org.springframework.scheduling.annotation.Scheduled" />
+            <property name="ignoredAnnotations" value="org.springframework.scheduling.annotation.Scheduled
+            | org.springframework.test.context.DynamicPropertySource" />
         </properties>
     </rule>
     <rule ref="category/java/bestpractices.xml/UseCollectionIsEmpty" />
@@ -70,5 +70,7 @@
 <!--    <rule ref="category/java/bestpractices.xml/JUnitAssertionsShouldIncludeMessage" />-->
 <!--    <rule ref="category/java/bestpractices.xml/JUnitTestsShouldIncludeAssert" />-->
 
+<!--  We rely on abstract classes as base classes. This rule disagrees with that.  -->
+<!--    <rule ref="category/java/bestpractices.xml/AbstractClassWithoutAbstractMethod" />-->
 
 </ruleset>

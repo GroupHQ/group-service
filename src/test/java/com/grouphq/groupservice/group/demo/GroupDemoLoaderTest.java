@@ -1,5 +1,6 @@
 package com.grouphq.groupservice.group.demo;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
@@ -9,13 +10,18 @@ import static org.mockito.Mockito.verify;
 import com.grouphq.groupservice.group.domain.groups.Group;
 import com.grouphq.groupservice.group.domain.groups.GroupRepository;
 import com.grouphq.groupservice.group.domain.groups.GroupService;
+import com.grouphq.groupservice.group.domain.groups.GroupStatus;
+import com.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
+import com.grouphq.groupservice.group.testutility.GroupTestUtility;
 import java.time.Duration;
-import org.junit.jupiter.api.BeforeEach;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
@@ -35,13 +41,8 @@ class GroupDemoLoaderTest {
     @Mock
     private GroupRepository groupRepository;
 
+    @InjectMocks
     private GroupDemoLoader groupDemoLoader;
-
-    @BeforeEach
-    public void setUp() {
-        groupDemoLoader = new GroupDemoLoader(groupService, groupRepository,
-            3, 5);
-    }
 
     @Test
     @DisplayName("Generates group and saves a group to the database")
@@ -54,25 +55,34 @@ class GroupDemoLoaderTest {
         given(groupRepository.saveAll(argThat(matcher)))
             .willReturn(Flux.just(mockGroup, mockGroup, mockGroup));
 
-        StepVerifier.create(groupDemoLoader.loadGroups())
+        StepVerifier.create(groupDemoLoader.loadGroups(3, 1))
             .expectNextCount(3)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
         verify(groupService, times(3)).generateGroup();
-        verify(groupRepository, times(1)).saveAll(argThat(matcher));
+        verify(groupRepository).saveAll(argThat(matcher));
     }
 
     @Test
-    @DisplayName("Updates active groups older than expiry time to auto-disbanded status")
+    @DisplayName("Updates active groups past cutoff time to auto-disbanded status")
     void expiryTest() {
-        given(groupService.expireGroups()).willReturn(Mono.empty());
+        final Instant cutoffTime = Instant.now().minus(1, ChronoUnit.HOURS);
+        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
 
-        StepVerifier.create(groupDemoLoader.expireGroups())
+        given(groupService.getActiveGroupsPastCutoffDate(cutoffTime))
+            .willReturn(Flux.just(group));
+
+        given(groupService.updateGroupStatus(any(GroupStatusRequestEvent.class)))
+            .willReturn(Mono.empty());
+
+        StepVerifier.create(groupDemoLoader.expireGroups(cutoffTime))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        verify(groupService, times(1)).expireGroups();
+        verify(groupService).getActiveGroupsPastCutoffDate(cutoffTime);
+        verify(groupService).updateGroupStatus(
+            argThat(request -> request.getNewStatus() == GroupStatus.AUTO_DISBANDED));
     }
 
 }

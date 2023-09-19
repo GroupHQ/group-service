@@ -3,10 +3,16 @@ package com.grouphq.groupservice.group.demo;
 import com.grouphq.groupservice.group.domain.groups.Group;
 import com.grouphq.groupservice.group.domain.groups.GroupRepository;
 import com.grouphq.groupservice.group.domain.groups.GroupService;
+import com.grouphq.groupservice.group.domain.groups.GroupStatus;
+import com.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -14,14 +20,20 @@ import reactor.core.publisher.Mono;
  * A Spring Job scheduler for periodically adding active groups
  * and auto-disbanding expired groups.
  */
-@Component
 public class GroupDemoLoader {
+
+    private static final Logger LOG = LoggerFactory.getLogger(GroupDemoLoader.class);
 
     private boolean initialStateLoaded;
 
-    private final int initialGroupSize;
+    @Value("${group.loader.initial-group-size}")
+    private int initialGroupSize;
 
-    private final int periodicGroupAdditionCount;
+    @Value("${group.loader.periodic-group-addition-count}")
+    private int periodicGroupAdditionCount;
+
+    @Value("${group.cutoff-checker.time}")
+    private int groupLifetime;
 
     private final GroupRepository groupRepository;
 
@@ -30,31 +42,20 @@ public class GroupDemoLoader {
     /**
      * Gathers dependencies and values needed for demo loader.
      */
-    public GroupDemoLoader(GroupService groupService,
-
-                           GroupRepository groupRepository,
-
-                           @Value("${group.loader.initial-group-size}")
-                           int initialGroupSize,
-
-                           @Value("${group.loader.periodic-group-addition-count}")
-                           int periodicGroupAdditionCount
-    ) {
+    public GroupDemoLoader(GroupService groupService, GroupRepository groupRepository) {
         this.groupService = groupService;
         this.groupRepository = groupRepository;
-
-        this.initialGroupSize = initialGroupSize;
-        this.periodicGroupAdditionCount = periodicGroupAdditionCount;
     }
 
     @Scheduled(initialDelayString = "${group.loader.initial-group-delay}",
         fixedDelayString = "${group.loader.periodic-group-addition-interval}",
         timeUnit = TimeUnit.SECONDS)
     private void loadGroupsJob() {
-        loadGroups().subscribe();
+        loadGroups(initialGroupSize, periodicGroupAdditionCount).subscribe();
     }
 
-    public Flux<Group> loadGroups() {
+    public Flux<Group> loadGroups(int initialGroupSize,
+                                  int periodicGroupAdditionCount) {
         final int groupsToAdd = initialStateLoaded
             ? periodicGroupAdditionCount : initialGroupSize;
 
@@ -68,14 +69,28 @@ public class GroupDemoLoader {
         return groupRepository.saveAll(Flux.just(groups));
     }
 
-    @Scheduled(initialDelayString = "${group.expiry-checker.initial-check-delay}",
-        fixedDelayString = "${group.expiry-checker.check-interval}",
+    @Scheduled(initialDelayString = "${group.cutoff-checker.initial-check-delay}",
+        fixedDelayString = "${group.cutoff-checker.check-interval}",
         timeUnit = TimeUnit.SECONDS)
     private void expireGroupsJob() {
-        groupService.expireGroups().subscribe();
+        expireGroups(Instant.now().minus(groupLifetime, ChronoUnit.SECONDS)).subscribe();
     }
 
-    public Mono<Void> expireGroups() {
-        return groupService.expireGroups();
+    public Flux<Void> expireGroups(Instant cutoffDate) {
+        return groupService.getActiveGroupsPastCutoffDate(cutoffDate)
+            .flatMap(group -> {
+                final GroupStatusRequestEvent statusRequestEvent = new GroupStatusRequestEvent(
+                    UUID.randomUUID(), group.id(), GroupStatus.AUTO_DISBANDED,
+                    null, Instant.now());
+
+                return groupService.updateGroupStatus(statusRequestEvent)
+                    .onErrorResume(throwable ->
+                        groupService.updateGroupStatusFailed(statusRequestEvent, throwable))
+                    .onErrorResume(throwable -> {
+                        LOG.error("Error updating group status", throwable);
+                        // log to sentry
+                        return Mono.empty();
+                    });
+            });
     }
 }

@@ -35,15 +35,15 @@ import reactor.test.StepVerifier;
 @Tag("IntegrationTest")
 class MemberRepositoryTest {
 
-    static final String USERNAME = "User";
-    static final String OWNER = "system";
+    private static final String USERNAME = "User";
+    private static final String OWNER = "system";
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
+    private static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
         new PostgreSQLContainer<>(DockerImageName.parse("postgres:14.4"));
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
     private MemberRepository memberRepository;
@@ -51,7 +51,7 @@ class MemberRepositoryTest {
     private AtomicReference<Group> group;
 
     @DynamicPropertySource
-    static void postgresqlProperties(DynamicPropertyRegistry registry) {
+    private static void postgresqlProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.r2dbc.url", MemberRepositoryTest::r2dbcUrl);
         registry.add("spring.r2dbc.username", POSTGRESQL_CONTAINER::getUsername);
         registry.add("spring.r2dbc.password", POSTGRESQL_CONTAINER::getPassword);
@@ -74,7 +74,8 @@ class MemberRepositoryTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        group = new AtomicReference<>(GroupTestUtility.generateFullGroupDetails());
+        group = new AtomicReference<>(GroupTestUtility
+            .generateFullGroupDetails(GroupStatus.ACTIVE));
 
         StepVerifier.create(groupRepository.save(group.get()))
             .consumeNextWith(group::set)

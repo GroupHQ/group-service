@@ -1,9 +1,9 @@
 package com.grouphq.groupservice.group.web;
 
-import com.grouphq.groupservice.group.domain.members.exceptions.GroupIsFullException;
-import com.grouphq.groupservice.group.domain.members.exceptions.GroupNotActiveException;
-import com.grouphq.groupservice.group.domain.members.exceptions.InternalServerError;
-import com.grouphq.groupservice.group.domain.members.exceptions.MemberNotActiveException;
+import com.grouphq.groupservice.group.domain.exceptions.GroupIsFullException;
+import com.grouphq.groupservice.group.domain.exceptions.GroupNotActiveException;
+import com.grouphq.groupservice.group.domain.exceptions.InternalServerError;
+import com.grouphq.groupservice.group.domain.exceptions.MemberNotActiveException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;

@@ -2,7 +2,6 @@ package com.grouphq.groupservice.group.demo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.grouphq.groupservice.config.DataConfig;
 import com.grouphq.groupservice.group.domain.groups.Group;
 import com.grouphq.groupservice.group.domain.groups.GroupRepository;
 import com.grouphq.groupservice.group.domain.groups.GroupService;
@@ -10,6 +9,7 @@ import com.grouphq.groupservice.group.domain.groups.GroupStatus;
 import com.grouphq.groupservice.group.testutility.GroupTestUtility;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,10 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -36,31 +34,21 @@ import reactor.test.StepVerifier;
  * Properties for Spring's scheduling are overridden to prevent it from running during this test.
  */
 @SpringBootTest
-@Import(DataConfig.class)
-@TestPropertySource(properties = {
-    "group.loader.initial-group-size=3",
-    "group.loader.initial-group-delay=10000",
-    "group.loader.periodic-group-addition-interval=10000",
-    "group.expiry-checker.time=1800",
-    "group.expiry-checker.initial-check-delay=10000",
-    "group.expiry-checker.check-interval=10000"
-})
 @Testcontainers
 @Tag("IntegrationTest")
 class GroupDemoLoaderIntegrationTest {
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
+    private static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
         new PostgreSQLContainer<>(DockerImageName.parse("postgres:14.4"));
 
-    @Autowired
-    GroupDemoLoader groupDemoLoader;
+    private GroupDemoLoader groupDemoLoader;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    GroupService groupService;
+    private GroupService groupService;
 
     @DynamicPropertySource
     static void postgresqlProperties(DynamicPropertyRegistry registry) {
@@ -78,6 +66,7 @@ class GroupDemoLoaderIntegrationTest {
 
     @BeforeEach
     void timesJobShouldHaveRun() {
+        this.groupDemoLoader = new GroupDemoLoader(groupService, groupRepository);
         StepVerifier.create(groupRepository.deleteAll())
             .expectComplete()
             .verify(Duration.ofSeconds(1));
@@ -92,12 +81,14 @@ class GroupDemoLoaderIntegrationTest {
         @Value("${group.loader.periodic-group-addition-count}")
         int periodicGroupAdditionCount
     ) {
-        StepVerifier.create(groupDemoLoader.loadGroups())
+        StepVerifier.create(
+            groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount))
             .expectNextCount(initialGroupSize)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        StepVerifier.create(groupDemoLoader.loadGroups())
+        StepVerifier.create(
+            groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount))
             .expectNextCount(periodicGroupAdditionCount)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
@@ -109,12 +100,13 @@ class GroupDemoLoaderIntegrationTest {
     }
 
     @Test
-    @DisplayName("Expires groups with time older than allowed expiry time")
-    void expiresGroups() {
-        Group[] testGroups = new Group[3];
+    @DisplayName("Expires groups with time older than cutoff time")
+    void expiresGroups(@Value ("${group.cutoff-checker.time}") int cutoffTime) {
+        final Instant cutoffDate = Instant.now().minus(cutoffTime, ChronoUnit.SECONDS);
+        final Group[] testGroups = new Group[3];
 
         for (int i = 0; i < testGroups.length; i++) {
-            testGroups[i] = GroupTestUtility.generateFullGroupDetails();
+            testGroups[i] = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
         }
 
         final List<Group> groupsSaved = new ArrayList<>();
@@ -131,8 +123,9 @@ class GroupDemoLoaderIntegrationTest {
             groupsToExpire[i] = new Group(
                 group.id(), group.title(), group.description(),
                 group.maxGroupSize(), group.currentGroupSize(), group.status(),
-                group.lastActive(), Instant.ofEpochMilli(0), group.lastModifiedDate(),
-                group.createdBy(), group.lastModifiedBy(), group.version()
+                group.lastActive(), cutoffDate.minus(1, ChronoUnit.SECONDS),
+                group.lastModifiedDate(), group.createdBy(),
+                group.lastModifiedBy(), group.version()
             );
         }
 
@@ -141,7 +134,7 @@ class GroupDemoLoaderIntegrationTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        StepVerifier.create(groupDemoLoader.expireGroups())
+        StepVerifier.create(groupDemoLoader.expireGroups(cutoffDate))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
@@ -159,12 +152,12 @@ class GroupDemoLoaderIntegrationTest {
     }
 
     @Test
-    @DisplayName("Does not expire groups with time younger than allowed expiry time")
-    void expirationStatusJob() {
+    @DisplayName("Does not expire groups after cutoff time")
+    void expirationStatusJob(@Value ("${group.cutoff-checker.time}") int cutoffTime) {
         Group[] testGroups = new Group[3];
 
         for (int i = 0; i < testGroups.length; i++) {
-            testGroups[i] = GroupTestUtility.generateFullGroupDetails();
+            testGroups[i] = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
         }
 
         StepVerifier.create(groupRepository.saveAll(Flux.just(testGroups)))
@@ -172,7 +165,8 @@ class GroupDemoLoaderIntegrationTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        StepVerifier.create(groupDemoLoader.expireGroups())
+        final Instant cutoffDate = Instant.now().minus(cutoffTime, ChronoUnit.SECONDS);
+        StepVerifier.create(groupDemoLoader.expireGroups(cutoffDate))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 

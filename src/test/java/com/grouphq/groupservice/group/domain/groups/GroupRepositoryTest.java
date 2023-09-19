@@ -33,7 +33,7 @@ import reactor.test.StepVerifier;
 class GroupRepositoryTest {
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
+    private static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres:14.4"));
 
     @Autowired
@@ -42,7 +42,7 @@ class GroupRepositoryTest {
     private static Group[] testGroups;
 
     @DynamicPropertySource
-    static void postgresqlProperties(DynamicPropertyRegistry registry) {
+    private static void postgresqlProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.r2dbc.url", GroupRepositoryTest::r2dbcUrl);
         registry.add("spring.r2dbc.username", POSTGRESQL_CONTAINER::getUsername);
         registry.add("spring.r2dbc.password", POSTGRESQL_CONTAINER::getPassword);
@@ -75,13 +75,13 @@ class GroupRepositoryTest {
                 groupRepository.save(testGroups[1]),
                 groupRepository.save(testGroups[2])
             )
-        ).verifyComplete();
+        ).expectComplete().verify(Duration.ofSeconds(1));
     }
 
     @AfterEach
     void deleteRepositoryData() {
         StepVerifier.create(groupRepository.deleteAll())
-            .verifyComplete();
+            .expectComplete().verify(Duration.ofSeconds(1));
     }
 
     @Test
@@ -92,7 +92,7 @@ class GroupRepositoryTest {
         StepVerifier.create(groupRepository.findGroupsByStatus(GroupStatus.ACTIVE))
             .recordWith(() -> groupsReturned)
             .expectNextCount(2)
-            .verifyComplete();
+            .expectComplete().verify(Duration.ofSeconds(1));
 
         assertThat(groupsReturned)
             .hasSize(2);
@@ -106,7 +106,7 @@ class GroupRepositoryTest {
         StepVerifier.create(groupRepository.getAllGroups())
             .recordWith(() -> groupsReturned)
             .expectNextCount(3)
-            .verifyComplete();
+            .expectComplete().verify(Duration.ofSeconds(1));
 
         assertThat(groupsReturned)
             .hasSize(3)
@@ -119,16 +119,34 @@ class GroupRepositoryTest {
     }
 
     @Test
-    @DisplayName("Expires groups before expiry date")
-    void expiresGroupsBeforeExpiryDate() {
+    @DisplayName("Get all groups older than cutoff date")
+    void retrieveGroupsThatShouldExpire() {
         final List<Group> groupsReturned = new ArrayList<>();
 
-        groupRepository.expireGroupsPastExpiryDate(Instant.now(), GroupStatus.AUTO_DISBANDED)
-                .thenMany(groupRepository.findGroupsByStatus(GroupStatus.AUTO_DISBANDED))
-                    .as(StepVerifier::create)
-                        .recordWith(() -> groupsReturned)
-                            .expectNextCount(3)
-                                .verifyComplete();
+        final Instant cutoffDate = Instant.now();
+
+        StepVerifier.create(
+            groupRepository.getActiveGroupsPastCutoffDate(cutoffDate, GroupStatus.ACTIVE))
+            .recordWith(() -> groupsReturned)
+            .expectNextCount(2)
+            .expectComplete().verify(Duration.ofSeconds(1));
+
+        assertThat(groupsReturned)
+            .filteredOn(group -> group.createdDate().isBefore(cutoffDate))
+            .hasSize(2);
+    }
+
+    @Test
+    @DisplayName("Expires groups older than cutoff date")
+    void expiresGroupsBeforeCutoffDate() {
+        final List<Group> groupsReturned = new ArrayList<>();
+
+        groupRepository.expireGroupsPastCutoffDate(Instant.now(), GroupStatus.AUTO_DISBANDED)
+            .thenMany(groupRepository.findGroupsByStatus(GroupStatus.AUTO_DISBANDED))
+            .as(StepVerifier::create)
+            .recordWith(() -> groupsReturned)
+            .expectNextCount(3)
+            .expectComplete().verify(Duration.ofSeconds(1));
 
         assertThat(groupsReturned)
             .filteredOn(group -> group.status() == GroupStatus.AUTO_DISBANDED)
@@ -178,4 +196,59 @@ class GroupRepositoryTest {
         final Instant lastActiveGroupUpdated = group.get().lastActive();
         assertThat(lastActiveGroupUpdated).isAfter(lastActiveGroupCreated);
     }
+
+    @Test
+    @DisplayName("Updates group's status")
+    void updateGroupStatus() {
+        final List<Group> groups = new ArrayList<>();
+
+        StepVerifier.create(groupRepository.findGroupsByStatus(GroupStatus.ACTIVE))
+            .recordWith(() -> groups)
+            .expectNextCount(2)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        assertThat(groups).allMatch(group -> group.status() == GroupStatus.ACTIVE);
+
+        final Long groupId = groups.get(0).id();
+
+        StepVerifier.create(groupRepository.updateStatus(groupId, GroupStatus.AUTO_DISBANDED))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        StepVerifier.create(groupRepository.findById(groupId))
+            .consumeNextWith(group ->
+                assertThat(group.status()).isEqualTo(GroupStatus.AUTO_DISBANDED))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+    }
+
+    @Test
+    @DisplayName("Updates the status of several groups before a certain date")
+    void updateGroupStatusBeforeDate() {
+        final List<Group> groups = new ArrayList<>();
+
+        StepVerifier.create(groupRepository.findGroupsByStatus(GroupStatus.ACTIVE))
+            .recordWith(() -> groups)
+            .expectNextCount(2)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        assertThat(groups).allMatch(group -> group.status() == GroupStatus.ACTIVE);
+
+        StepVerifier.create(
+            groupRepository.expireGroupsPastCutoffDate(Instant.now(), GroupStatus.AUTO_DISBANDED))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        groups.clear();
+        StepVerifier.create(groupRepository.findAll())
+            .recordWith(() -> groups)
+            .expectNextCount(3)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        assertThat(groups).allMatch(group -> group.status() == GroupStatus.AUTO_DISBANDED);
+    }
+
 }

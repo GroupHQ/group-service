@@ -1,4 +1,4 @@
-package com.grouphq.groupservice.group.domain.members.exceptions;
+package com.grouphq.groupservice.group.domain.exceptions;
 
 /**
  * Business exception informing that an action cannot be completed

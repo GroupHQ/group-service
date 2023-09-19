@@ -3,6 +3,7 @@ package com.grouphq.groupservice.group.web.objects;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.grouphq.groupservice.group.domain.groups.Group;
+import com.grouphq.groupservice.group.domain.groups.GroupStatus;
 import com.grouphq.groupservice.group.testutility.GroupTestUtility;
 import java.io.IOException;
 import org.junit.jupiter.api.Tag;
@@ -21,7 +22,7 @@ class GroupJsonTest {
     
     @Test
     void serializeToObject() throws IOException {
-        final Group group = GroupTestUtility.generateFullGroupDetails();
+        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
         final JsonContent<Group> jsonContent = json.write(group);
         
         assertThat(jsonContent).extractingJsonPathNumberValue("@.id")
