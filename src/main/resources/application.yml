@@ -74,4 +74,4 @@ spring:
 logging:
   level:
     root: info
-    com.grouphq: debug
+    org.grouphq: debug

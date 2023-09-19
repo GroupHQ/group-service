@@ -31,7 +31,7 @@ pmd {
     toolVersion = "6.55.+"
 }
 
-group = "com.grouphq"
+group = "org.grouphq"
 version = "0.0.1-SNAPSHOT"
 
 java {
@@ -125,7 +125,7 @@ tasks.register("testUnit", Test) {
 
     filter {
         // prevents the Cucumber Suite from loading in and running Cucumber tests
-        excludeTestsMatching("com.grouphq.groupservice.cucumber.*")
+        excludeTestsMatching("org.grouphq.groupservice.cucumber.*")
     }
 
     maxParallelForks = 4 // don"t run for tests that interact with the file system. Unit tests should be fine
@@ -144,7 +144,7 @@ tasks.register("testIntegration", Test) {
 
     filter {
         // prevents the Cucumber Suite from loading in and running Cucumber tests
-        excludeTestsMatching("com.grouphq.groupservice.cucumber.*")
+        excludeTestsMatching("org.grouphq.groupservice.cucumber.*")
     }
 }
 
