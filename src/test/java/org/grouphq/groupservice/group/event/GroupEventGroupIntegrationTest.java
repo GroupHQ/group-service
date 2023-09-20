@@ -65,7 +65,7 @@ class GroupEventGroupIntegrationTest {
     @Value("${spring.cloud.stream.bindings.handleGroupStatusRequests-in-0.destination}")
     private String updateStatusHandlerDestination;
 
-    @Value("${spring.cloud.stream.bindings.publishProcessedEvents-out-0.destination}")
+    @Value("${spring.cloud.stream.bindings.forwardProcessedEvents-out-0.destination}")
     private String eventPublisherDestination;
 
     @Autowired

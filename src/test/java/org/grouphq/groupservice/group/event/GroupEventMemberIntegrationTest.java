@@ -76,7 +76,7 @@ class GroupEventMemberIntegrationTest {
     @Value("${spring.cloud.stream.bindings.handleGroupLeaveRequests-in-0.destination}")
     private String leaveHandlerDestination;
 
-    @Value("${spring.cloud.stream.bindings.publishProcessedEvents-out-0.destination}")
+    @Value("${spring.cloud.stream.bindings.forwardProcessedEvents-out-0.destination}")
     private String eventPublisherDestination;
 
     @Container

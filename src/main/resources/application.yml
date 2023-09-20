@@ -45,7 +45,7 @@ spring:
         handleGroupStatusRequests;
         handleGroupJoinRequests;
         handleGroupLeaveRequests;
-        publishProcessedEvents
+        forwardProcessedEvents
     stream:
       bindings:
         handleGroupCreateRequests-in-0:
@@ -60,7 +60,7 @@ spring:
         handleGroupLeaveRequests-in-0:
           destination: group-leave-requests
           group: ${spring.application.name}
-        publishProcessedEvents-out-0:
+        forwardProcessedEvents-out-0:
           destination: group-event-results
   integration:
     poller:
