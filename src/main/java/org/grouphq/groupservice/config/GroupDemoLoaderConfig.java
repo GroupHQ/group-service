@@ -1,7 +1,6 @@
 package org.grouphq.groupservice.config;
 
 import org.grouphq.groupservice.group.demo.GroupDemoLoader;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;

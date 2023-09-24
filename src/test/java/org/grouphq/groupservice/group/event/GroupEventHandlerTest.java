@@ -6,6 +6,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import jakarta.validation.Validator;
+import java.util.Set;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.members.MemberService;
@@ -14,8 +16,6 @@ import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
-import jakarta.validation.Validator;
-import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

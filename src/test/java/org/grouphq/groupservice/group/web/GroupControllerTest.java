@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import java.util.List;
 import org.grouphq.groupservice.config.SecurityConfig;
 import org.grouphq.groupservice.group.domain.exceptions.InternalServerError;
 import org.grouphq.groupservice.group.domain.groups.Group;
@@ -13,7 +14,6 @@ import org.grouphq.groupservice.group.domain.members.Member;
 import org.grouphq.groupservice.group.domain.members.MemberService;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

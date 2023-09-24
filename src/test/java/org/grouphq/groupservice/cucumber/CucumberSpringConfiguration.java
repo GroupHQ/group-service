@@ -17,10 +17,11 @@ import org.testcontainers.utility.DockerImageName;
 @CucumberContextConfiguration
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {"group.loader.enabled=true"})
+    properties = {"group.loader.enabled=false"})
 @AutoConfigureWebTestClient
 @ContextConfiguration(initializers = CucumberSpringConfiguration.Initializer.class)
 public class CucumberSpringConfiguration {
+
     static class Initializer
         implements ApplicationContextInitializer<ConfigurableApplicationContext> {
         private static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =

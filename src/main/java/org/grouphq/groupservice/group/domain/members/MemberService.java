@@ -1,7 +1,9 @@
 package org.grouphq.groupservice.group.domain.members;
 
+import java.util.UUID;
 import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
 import org.grouphq.groupservice.group.domain.exceptions.GroupDoesNotExistException;
+import org.grouphq.groupservice.group.domain.exceptions.MemberNotFoundException;
 import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
 import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
@@ -50,7 +52,8 @@ public class MemberService {
         return outboxService.errorIfEventPublished(event)
             .flatMap(requestEvent -> groupRepository.findById(event.getAggregateId()))
             .switchIfEmpty(Mono.error(new GroupDoesNotExistException("Cannot save member")))
-            .flatMap(group -> memberRepository.save(Member.of(event.getUsername(), group.id())))
+            .flatMap(group -> memberRepository.save(
+                Member.of(event.getWebsocketId(), event.getUsername(), group.id())))
             .flatMap(member -> outboxService.createGroupJoinSuccessfulEvent(event, member))
             .flatMap(outboxService::saveOutboxEvent)
             .doOnSuccess(emptySave -> LOG.info("Fulfilled join request: {}", event))
@@ -79,7 +82,11 @@ public class MemberService {
         return outboxService.errorIfEventPublished(event)
             .flatMap(requestEvent -> groupRepository.findById(event.getAggregateId()))
             .switchIfEmpty(Mono.error(new GroupDoesNotExistException("Cannot remove member")))
-            .flatMap(unused -> memberRepository.removeMemberFromGroup(event.getMemberId()))
+            .then(Mono.defer(() -> memberRepository.findMemberByIdAndWebsocketId(
+                event.getMemberId(), UUID.fromString(event.getWebsocketId()))))
+            .switchIfEmpty(Mono.error(new MemberNotFoundException("Cannot remove member")))
+            .then(Mono.defer(() -> memberRepository.removeMemberFromGroup(
+                event.getMemberId(), UUID.fromString(event.getWebsocketId()))))
             .then(Mono.defer(() -> outboxService.createGroupLeaveSuccessfulEvent(event)))
             .flatMap(outboxService::saveOutboxEvent)
             .doOnSuccess(emptySave -> LOG.info("Fulfilled remove request: {}", event))

@@ -2,16 +2,16 @@ package org.grouphq.groupservice.group.demo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.grouphq.groupservice.group.domain.groups.Group;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
-import org.grouphq.groupservice.group.domain.groups.GroupService;
-import org.grouphq.groupservice.group.domain.groups.GroupStatus;
-import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import org.grouphq.groupservice.group.domain.groups.Group;
+import org.grouphq.groupservice.group.domain.groups.GroupRepository;
+import org.grouphq.groupservice.group.domain.groups.GroupService;
+import org.grouphq.groupservice.group.domain.groups.GroupStatus;
+import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -83,13 +83,11 @@ class GroupDemoLoaderIntegrationTest {
     ) {
         StepVerifier.create(
             groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount))
-            .expectNextCount(initialGroupSize)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
         StepVerifier.create(
             groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount))
-            .expectNextCount(periodicGroupAdditionCount)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 

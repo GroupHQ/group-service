@@ -3,18 +3,17 @@ package org.grouphq.groupservice.group.domain.members;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.grouphq.groupservice.group.domain.exceptions.EventAlreadyPublishedException;
-import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
-import org.grouphq.groupservice.group.domain.exceptions.GroupIsFullException;
-import org.grouphq.groupservice.group.domain.exceptions.GroupNotActiveException;
-import org.grouphq.groupservice.group.domain.exceptions.MemberNotActiveException;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Supplier;
+import org.grouphq.groupservice.group.domain.exceptions.*;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
@@ -28,10 +27,6 @@ import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
 import org.grouphq.groupservice.group.event.daos.RequestEvent;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -134,8 +129,7 @@ class MemberServiceTest {
         verify(outboxService).errorIfEventPublished(event);
         verify(groupRepository).findById(group.id());
         verify(memberRepository).save(any(Member.class));
-        verify(outboxService)
-            .createGroupJoinSuccessfulEvent(eq(event), any(Member.class));
+        verify(outboxService).createGroupJoinSuccessfulEvent(eq(event), any(Member.class));
         verify(outboxService).saveOutboxEvent(outboxEvent);
     }
 
@@ -155,8 +149,8 @@ class MemberServiceTest {
         given(outboxService.errorIfEventPublished(event))
             .willReturn(Mono.just(event));
 
-        given(outboxService.createGroupJoinFailedEvent(
-            any(GroupJoinRequestEvent.class), any(Throwable.class)))
+        given(outboxService.createGroupJoinFailedEvent(any(
+            GroupJoinRequestEvent.class), any(Throwable.class)))
             .willReturn(Mono.just(outboxEvent));
 
         given(outboxService.saveOutboxEvent(any(OutboxEvent.class)))
@@ -167,8 +161,7 @@ class MemberServiceTest {
             .verify(Duration.ofSeconds(1));
 
         verify(outboxService).errorIfEventPublished(event);
-        verify(outboxService)
-            .createGroupJoinFailedEvent(eq(event), any(Throwable.class));
+        verify(outboxService).createGroupJoinFailedEvent(eq(event), any(Throwable.class));
         verifyNoInteractions(exceptionMapper);
         verify(outboxService).saveOutboxEvent(outboxEvent);
     }
@@ -275,6 +268,32 @@ class MemberServiceTest {
     }
 
     @Test
+    @DisplayName("Return error when group with id not found for join request")
+    void returnErrorWhenGroupWithIdNotFoundForJoinRequest() {
+        final var event = GroupTestUtility.generateGroupJoinRequestEvent();
+
+        given(outboxService.errorIfEventPublished(event))
+            .willReturn(Mono.just(event));
+
+        given(groupRepository.findById(event.getAggregateId()))
+            .willReturn(Mono.empty());
+
+        given(exceptionMapper.getBusinessException(any(Throwable.class)))
+            .willReturn(new GroupDoesNotExistException("Cannot add member to group"));
+
+        StepVerifier.create(memberService.joinGroup(event))
+            .expectErrorMatches(throwable -> throwable instanceof GroupDoesNotExistException)
+            .verify(Duration.ofSeconds(1));
+
+        verify(outboxService).errorIfEventPublished(event);
+        verify(groupRepository).findById(event.getAggregateId());
+        verify(memberRepository, never()).save(any(Member.class));
+        verify(outboxService, never()).createGroupJoinSuccessfulEvent(any(), any());
+        verify(outboxService, never()).saveOutboxEvent(any());
+        verify(exceptionMapper).getBusinessException(any(Throwable.class));
+    }
+
+    @Test
     @DisplayName("Process group leave request successfully (removes a member from a group)")
     void processGroupLeave() throws JsonProcessingException {
         final var event = GroupTestUtility.generateGroupLeaveRequestEvent();
@@ -286,11 +305,16 @@ class MemberServiceTest {
             objectMapper.writeValueAsString(Collections.singletonMap("memberId", memberId)),
             EventStatus.SUCCESSFUL, event.getWebsocketId());
 
+        final UUID socketId = UUID.fromString(event.getWebsocketId());
+
         given(outboxService.errorIfEventPublished(event))
             .willReturn(Mono.just(event));
 
         given(groupRepository.findById(event.getAggregateId()))
             .willReturn(Mono.just(group));
+
+        given(memberRepository.findMemberByIdAndWebsocketId(memberId, socketId))
+            .willReturn(Mono.just(Member.of(socketId.toString(), "User", group.id())));
 
         given(outboxService.createGroupLeaveSuccessfulEvent(event))
             .willReturn(Mono.just(outboxEvent));
@@ -298,7 +322,8 @@ class MemberServiceTest {
         given(outboxService.saveOutboxEvent(any(OutboxEvent.class)))
             .willReturn(Mono.empty());
 
-        given(memberRepository.removeMemberFromGroup(memberId)).willReturn(Mono.empty());
+        given(memberRepository.removeMemberFromGroup(memberId, socketId))
+            .willReturn(Mono.empty());
 
         StepVerifier.create(memberService.removeMember(event))
             .expectComplete()
@@ -306,9 +331,70 @@ class MemberServiceTest {
 
         verify(outboxService).errorIfEventPublished(event);
         verify(groupRepository).findById(event.getAggregateId());
+        verify(memberRepository).findMemberByIdAndWebsocketId(memberId, socketId);
         verify(outboxService).createGroupLeaveSuccessfulEvent(event);
         verify(outboxService).saveOutboxEvent(outboxEvent);
-        verify(memberRepository).removeMemberFromGroup(memberId);
+        verify(memberRepository).removeMemberFromGroup(memberId, socketId);
+    }
+
+    @Test
+    @DisplayName("Return error when group with id not found for leave request")
+    void returnErrorWhenGroupWithIdNotFoundForLeaveRequest() {
+        final var event = GroupTestUtility.generateGroupLeaveRequestEvent();
+
+        given(outboxService.errorIfEventPublished(event))
+            .willReturn(Mono.just(event));
+
+        given(groupRepository.findById(event.getAggregateId()))
+            .willReturn(Mono.empty());
+
+        given(exceptionMapper.getBusinessException(any(Throwable.class)))
+            .willReturn(new GroupDoesNotExistException("Cannot remove member from group"));
+
+        StepVerifier.create(memberService.removeMember(event))
+            .expectErrorMatches(throwable -> throwable instanceof GroupDoesNotExistException)
+            .verify(Duration.ofSeconds(1));
+
+        verify(outboxService).errorIfEventPublished(event);
+        verify(groupRepository).findById(event.getAggregateId());
+        verify(memberRepository, never()).findMemberByIdAndWebsocketId(any(), any());
+        verify(outboxService, never()).createGroupLeaveSuccessfulEvent(any());
+        verify(outboxService, never()).saveOutboxEvent(any());
+        verify(memberRepository, never()).removeMemberFromGroup(any(), any());
+        verify(exceptionMapper).getBusinessException(any(Throwable.class));
+    }
+
+    @Test
+    @DisplayName("Return error when member with socket id not found")
+    void returnErrorWhenMemberWithSocketIdNotFound() {
+        final var event = GroupTestUtility.generateGroupLeaveRequestEvent();
+        final Long memberId = event.getMemberId();
+
+        given(outboxService.errorIfEventPublished(event))
+            .willReturn(Mono.just(event));
+
+        given(groupRepository.findById(event.getAggregateId()))
+            .willReturn(Mono.just(group));
+
+        final UUID socketId = UUID.fromString(event.getWebsocketId());
+
+        given(memberRepository.findMemberByIdAndWebsocketId(memberId, socketId))
+            .willReturn(Mono.empty());
+
+        given(exceptionMapper.getBusinessException(any(Throwable.class)))
+            .willReturn(new MemberNotFoundException("Cannot remove member from group"));
+
+        StepVerifier.create(memberService.removeMember(event))
+            .expectErrorMatches(throwable -> throwable instanceof MemberNotFoundException)
+            .verify(Duration.ofSeconds(1));
+
+        verify(outboxService).errorIfEventPublished(event);
+        verify(groupRepository).findById(event.getAggregateId());
+        verify(memberRepository).findMemberByIdAndWebsocketId(memberId, socketId);
+        verify(outboxService, never()).createGroupLeaveSuccessfulEvent(any());
+        verify(outboxService, never()).saveOutboxEvent(any());
+        verify(memberRepository, never()).removeMemberFromGroup(any(), any());
+        verify(exceptionMapper).getBusinessException(any(Throwable.class));
     }
 
     @Test
@@ -344,7 +430,7 @@ class MemberServiceTest {
             .createGroupLeaveFailedEvent(event, failure);
         verify(outboxService).saveOutboxEvent(outboxEvent);
         verify(exceptionMapper).getBusinessException(any(Throwable.class));
-        verify(memberRepository, never()).removeMemberFromGroup(any());
+        verify(memberRepository, never()).removeMemberFromGroup(any(), any());
     }
 
     @Test

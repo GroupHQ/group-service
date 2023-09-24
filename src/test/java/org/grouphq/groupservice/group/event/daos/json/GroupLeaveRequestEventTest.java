@@ -2,10 +2,10 @@ package org.grouphq.groupservice.group.event.daos.json;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
+import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

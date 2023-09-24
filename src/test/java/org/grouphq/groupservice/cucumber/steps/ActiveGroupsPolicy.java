@@ -2,6 +2,7 @@ package org.grouphq.groupservice.cucumber.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
@@ -9,7 +10,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.time.Duration;
-import java.util.List;
+import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,12 +33,10 @@ public class ActiveGroupsPolicy {
     @Given("there are active groups")
     public void thereAreActiveGroups() {
         final Group[] groups = {
-            Group.of("Example Title", "Example Description", 10,
-                1, GroupStatus.ACTIVE),
-            Group.of("Example Title", "Example Description", 5,
-                2, GroupStatus.ACTIVE),
-            Group.of("Example Title", "Example Description", 5,
-                2, GroupStatus.AUTO_DISBANDED)
+            GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE),
+            GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE),
+            GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE),
+            GroupTestUtility.generateFullGroupDetails(GroupStatus.AUTO_DISBANDED),
         };
 
         StepVerifier.create(
@@ -78,10 +77,16 @@ public class ActiveGroupsPolicy {
 
     @Then("I should be given a list of at least {int} active groups")
     public void iShouldBeGivenAListOfAtLeastActiveGroups(int activeGroupsNeeded) {
-        final List<Group> groups = groupRepository.getAllGroups().collectList().block();
-
-        assertThat(groups)
-            .filteredOn(group -> group.status().equals(GroupStatus.ACTIVE))
-            .hasSizeGreaterThanOrEqualTo(activeGroupsNeeded);
+        StepVerifier.create(groupRepository.getAllGroups())
+            .recordWith(ArrayList::new)
+            .expectNextCount(activeGroupsNeeded)
+            .consumeRecordedWith(groups -> {
+                assertThat(groups).isNotEmpty();
+                assertThat(groups).allMatch(group ->
+                        group.status().equals(GroupStatus.ACTIVE),
+                    "All groups received should be active");
+            })
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
     }
 }

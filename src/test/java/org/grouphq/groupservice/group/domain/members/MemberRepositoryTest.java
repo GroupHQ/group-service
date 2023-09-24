@@ -2,14 +2,15 @@ package org.grouphq.groupservice.group.domain.members;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import org.grouphq.groupservice.config.DataConfig;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -133,9 +134,9 @@ class MemberRepositoryTest {
             .verify(Duration.ofSeconds(1));
 
         final Member memberWithChanges = new Member(
-            member.get().id(), "New Username", member.get().groupId(), member.get().memberStatus(),
-            member.get().joinedDate(), member.get().exitedDate(), member.get().createdDate(),
-            member.get().lastModifiedDate(), member.get().createdBy(),
+            member.get().id(), member.get().websocketId(), "New Username", member.get().groupId(),
+            member.get().memberStatus(), member.get().joinedDate(), member.get().exitedDate(),
+            member.get().createdDate(), member.get().lastModifiedDate(), member.get().createdBy(),
             member.get().lastModifiedBy(), member.get().version()
         );
 
@@ -190,8 +191,9 @@ class MemberRepositoryTest {
         final AtomicReference<Member> member = new AtomicReference<>(addMemberToGroup(USERNAME));
 
         final Member notActiveMember = new Member(
-            member.get().id(), member.get().username(), member.get().groupId(), MemberStatus.LEFT,
-            member.get().joinedDate(), member.get().exitedDate(), member.get().createdDate(),
+            member.get().id(), member.get().websocketId(), member.get().username(),
+            member.get().groupId(), MemberStatus.LEFT, member.get().joinedDate(),
+            member.get().exitedDate(), member.get().createdDate(),
             member.get().lastModifiedDate(), member.get().createdBy(),
             member.get().lastModifiedBy(), member.get().version()
         );
@@ -202,8 +204,9 @@ class MemberRepositoryTest {
             .verify(Duration.ofSeconds(1));
 
         final Member memberWithChanges = new Member(
-            member.get().id(), member.get().username(), member.get().groupId(), MemberStatus.ACTIVE,
-            member.get().joinedDate(), member.get().exitedDate(), member.get().createdDate(),
+            member.get().id(), member.get().websocketId(), member.get().username(),
+            member.get().groupId(), MemberStatus.ACTIVE, member.get().joinedDate(),
+            member.get().exitedDate(), member.get().createdDate(),
             member.get().lastModifiedDate(), member.get().createdBy(),
             member.get().lastModifiedBy(), member.get().version()
         );
@@ -241,7 +244,8 @@ class MemberRepositoryTest {
 
         final int groupSizeBeforeRemoving = group.get().currentGroupSize();
 
-        StepVerifier.create(memberRepository.removeMemberFromGroup(memberOfGroup.id()))
+        StepVerifier.create(memberRepository.removeMemberFromGroup(
+            memberOfGroup.id(), memberOfGroup.websocketId()))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
@@ -260,6 +264,43 @@ class MemberRepositoryTest {
                 assertThat(member.exitedDate()).isNotNull();
                 assertThat(member.memberStatus()).isEqualTo(MemberStatus.LEFT);
                 assertThat(member.exitedDate()).isAfter(Instant.now().minusSeconds(1));
+            })
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+    }
+
+    @Test
+    @DisplayName("Return member by group and socket ID")
+    void returnMemberByGroupAndSocketId() {
+        final Member memberOfGroup = addMemberToGroup(USERNAME);
+
+        StepVerifier.create(memberRepository.findMemberByIdAndWebsocketId(
+            memberOfGroup.id(), memberOfGroup.websocketId()))
+            .expectNextCount(1)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+    }
+
+    @Test
+    @DisplayName("Remove member from group if they have the correct socket ID")
+    void removeMemberFromGroupOnlyIfTheyHaveTheCorrectSocketId() {
+        final Member memberOfGroup = addMemberToGroup(USERNAME);
+
+        StepVerifier.create(groupRepository.findById(group.get().id()))
+            .consumeNextWith(group::set)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        StepVerifier.create(memberRepository.removeMemberFromGroup(
+                memberOfGroup.id(), UUID.randomUUID()))
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        StepVerifier.create(memberRepository.findById(memberOfGroup.id()))
+            .consumeNextWith(member -> {
+                assertThat(member.groupId()).isEqualTo(group.get().id());
+                assertThat(member.exitedDate()).isNull();
+                assertThat(member.memberStatus()).isEqualTo(MemberStatus.ACTIVE);
             })
             .expectComplete()
             .verify(Duration.ofSeconds(1));

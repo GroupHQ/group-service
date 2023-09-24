@@ -3,11 +3,11 @@ package org.grouphq.groupservice.group.event;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import java.time.Duration;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.OutboxRepository;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
-import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

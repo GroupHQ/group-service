@@ -1,6 +1,7 @@
 package org.grouphq.groupservice.group.domain.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
 import org.grouphq.groupservice.group.domain.exceptions.EventAlreadyPublishedException;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.members.Member;
@@ -12,7 +13,6 @@ import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
 import org.grouphq.groupservice.group.event.daos.RequestEvent;
-import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

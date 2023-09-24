@@ -1,6 +1,7 @@
 package org.grouphq.groupservice.group.domain.members;
 
 import java.time.Instant;
+import java.util.UUID;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -14,6 +15,7 @@ import org.springframework.data.relational.core.mapping.Table;
  *
  * @param id A unique ID belonging to a member
  * @param username Member's username
+ * @param websocketId The user's websocket ID for the request
  * @param groupId Group ID identifying the group the member belongs to
  * @param joinedDate Time user joined the group. Same time as createdDate
  * @param exitedDate Time user left the group. Initially null.
@@ -28,6 +30,8 @@ public record Member(
 
     @Id
     Long id,
+    UUID websocketId,
+
     String username,
     Long groupId,
     MemberStatus memberStatus,
@@ -53,7 +57,19 @@ public record Member(
     int version
 ) {
     public static Member of(String username, Long groupId) {
-        return new Member(null, username, groupId, MemberStatus.ACTIVE, null, null,
-            null, null, null, null, 0);
+        return new Member(null, UUID.randomUUID(), username, groupId, MemberStatus.ACTIVE, null,
+            null, null, null, null, null, 0);
+    }
+
+    public static Member of(UUID websocketId, String username, Long groupId) {
+        return new Member(null, websocketId, username, groupId,
+            MemberStatus.ACTIVE, null, null, null,
+            null, null, null, 0);
+    }
+
+    public static Member of(String websocketId, String username, Long groupId) {
+        return new Member(null, UUID.fromString(websocketId), username, groupId,
+            MemberStatus.ACTIVE, null, null, null,
+            null, null, null, 0);
     }
 }

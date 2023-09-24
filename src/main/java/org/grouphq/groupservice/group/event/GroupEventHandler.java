@@ -1,5 +1,10 @@
 package org.grouphq.groupservice.group.event;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.members.MemberService;
 import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
@@ -7,11 +12,6 @@ import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
 import org.grouphq.groupservice.group.event.daos.RequestEvent;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validator;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;

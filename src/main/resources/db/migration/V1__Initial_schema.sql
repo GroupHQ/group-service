@@ -40,6 +40,7 @@ CREATE TABLE groups (
 
 CREATE TABLE members (
     id BIGSERIAL PRIMARY KEY NOT NULL,
+    websocket_id UUID NOT NULL,
     username VARCHAR(64) NOT NULL,
     group_id BIGINT NOT NULL REFERENCES groups(id),
     member_status VARCHAR(100) NOT NULL REFERENCES member_status(status),

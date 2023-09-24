@@ -2,6 +2,10 @@ package org.grouphq.groupservice.group.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.grouphq.groupservice.config.DataConfig;
 import org.grouphq.groupservice.config.SecurityConfig;
 import org.grouphq.groupservice.group.domain.groups.Group;
@@ -11,10 +15,6 @@ import org.grouphq.groupservice.group.domain.members.Member;
 import org.grouphq.groupservice.group.domain.members.MemberRepository;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Map;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
@@ -18,9 +21,6 @@ import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
 import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -252,7 +252,8 @@ class GroupEventMemberIntegrationTest {
         final Long memberId = memberIdInt.longValue();
 
         final GroupLeaveRequestEvent leaveRequestEvent =
-            GroupTestUtility.generateGroupLeaveRequestEvent(group.id(), memberId);
+            GroupTestUtility.generateGroupLeaveRequestEvent(
+                joinRequestEvent.getWebsocketId(), group.id(), memberId);
 
         inputDestination.send(new GenericMessage<>(leaveRequestEvent), leaveHandlerDestination);
         payload = outputDestination.receive(1000, eventPublisherDestination);

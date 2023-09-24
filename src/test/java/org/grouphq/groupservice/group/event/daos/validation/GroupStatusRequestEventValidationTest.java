@@ -2,8 +2,6 @@ package org.grouphq.groupservice.group.event.daos.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.grouphq.groupservice.group.domain.groups.GroupStatus;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -11,6 +9,8 @@ import jakarta.validation.ValidatorFactory;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
+import org.grouphq.groupservice.group.domain.groups.GroupStatus;
+import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

@@ -1,14 +1,14 @@
 package org.grouphq.groupservice.group.demo;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,7 +60,7 @@ public class GroupDemoLoader {
         GroupCreateRequestEvent[] createRequestEvents = new GroupCreateRequestEvent[groupsToAdd];
 
         for (int i = 0; i < groupsToAdd; i++) {
-            Group group = groupService.generateGroup();
+            final Group group = groupService.generateGroup();
             createRequestEvents[i] = new GroupCreateRequestEvent(
                 UUID.randomUUID(), group.title(), group.description(),
                 group.maxGroupSize(), group.currentGroupSize(), "system", null,

@@ -1,7 +1,7 @@
 package org.grouphq.groupservice.group.web.objects.egress;
 
-import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import java.time.Instant;
+import org.grouphq.groupservice.group.domain.members.MemberStatus;
 
 /**
  * A data-access-object representing a member model containing

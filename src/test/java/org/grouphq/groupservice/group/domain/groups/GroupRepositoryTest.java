@@ -2,19 +2,13 @@ package org.grouphq.groupservice.group.domain.groups;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.grouphq.groupservice.config.DataConfig;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.grouphq.groupservice.config.DataConfig;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
@@ -95,7 +89,7 @@ class GroupRepositoryTest {
             .expectNextCount(2)
             .expectComplete().verify(Duration.ofSeconds(1));
 
-        Assertions.assertThat(groupsReturned)
+        assertThat(groupsReturned)
             .hasSize(2);
     }
 
@@ -109,12 +103,12 @@ class GroupRepositoryTest {
             .expectNextCount(3)
             .expectComplete().verify(Duration.ofSeconds(1));
 
-        Assertions.assertThat(groupsReturned)
+        assertThat(groupsReturned)
             .hasSize(3)
             .filteredOn(group -> group.status() == GroupStatus.ACTIVE)
             .hasSize(2);
 
-        Assertions.assertThat(groupsReturned)
+        assertThat(groupsReturned)
             .filteredOn(group -> group.status() == GroupStatus.AUTO_DISBANDED)
             .hasSize(1);
     }
@@ -132,7 +126,7 @@ class GroupRepositoryTest {
             .expectNextCount(2)
             .expectComplete().verify(Duration.ofSeconds(1));
 
-        Assertions.assertThat(groupsReturned)
+        assertThat(groupsReturned)
             .filteredOn(group -> group.createdDate().isBefore(cutoffDate))
             .hasSize(2);
     }
@@ -149,7 +143,7 @@ class GroupRepositoryTest {
             .expectNextCount(3)
             .expectComplete().verify(Duration.ofSeconds(1));
 
-        Assertions.assertThat(groupsReturned)
+        assertThat(groupsReturned)
             .filteredOn(group -> group.status() == GroupStatus.AUTO_DISBANDED)
             .hasSize(3);
     }
@@ -209,7 +203,7 @@ class GroupRepositoryTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        Assertions.assertThat(groups).allMatch(group -> group.status() == GroupStatus.ACTIVE);
+        assertThat(groups).allMatch(group -> group.status() == GroupStatus.ACTIVE);
 
         final Long groupId = groups.get(0).id();
 
@@ -235,7 +229,7 @@ class GroupRepositoryTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        Assertions.assertThat(groups).allMatch(group -> group.status() == GroupStatus.ACTIVE);
+        assertThat(groups).allMatch(group -> group.status() == GroupStatus.ACTIVE);
 
         StepVerifier.create(
             groupRepository.expireGroupsPastCutoffDate(Instant.now(), GroupStatus.AUTO_DISBANDED))
@@ -249,7 +243,8 @@ class GroupRepositoryTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        Assertions.assertThat(groups).allMatch(group -> group.status() == GroupStatus.AUTO_DISBANDED);
+        assertThat(groups).allMatch(
+            group -> group.status() == GroupStatus.AUTO_DISBANDED);
     }
 
 }

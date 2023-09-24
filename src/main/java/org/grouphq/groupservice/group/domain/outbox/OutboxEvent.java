@@ -2,8 +2,8 @@ package org.grouphq.groupservice.group.domain.outbox;
 
 import java.time.Instant;
 import java.util.UUID;
-import lombok.Data;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;

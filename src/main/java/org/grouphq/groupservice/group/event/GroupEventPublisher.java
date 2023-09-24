@@ -1,9 +1,9 @@
 package org.grouphq.groupservice.group.event;
 
+import java.util.function.Supplier;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.OutboxRepository;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.function.context.PollableBean;
