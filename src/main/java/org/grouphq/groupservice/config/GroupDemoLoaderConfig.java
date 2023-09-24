@@ -16,16 +16,14 @@ import org.springframework.context.annotation.Configuration;
 public class GroupDemoLoaderConfig {
 
     private final GroupService groupService;
-    private final GroupRepository groupRepository;
 
-    public GroupDemoLoaderConfig(GroupService groupService, GroupRepository groupRepository) {
+    public GroupDemoLoaderConfig(GroupService groupService) {
         this.groupService = groupService;
-        this.groupRepository = groupRepository;
     }
 
     @Bean
     @ConditionalOnProperty(name = "group.loader.enabled", havingValue = "true")
     public GroupDemoLoader groupDemoLoader() {
-        return new GroupDemoLoader(groupService, groupRepository);
+        return new GroupDemoLoader(groupService);
     }
 }

@@ -1,9 +1,9 @@
 package org.grouphq.groupservice.group.demo;
 
 import org.grouphq.groupservice.group.domain.groups.Group;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
+import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -35,16 +35,13 @@ public class GroupDemoLoader {
     @Value("${group.cutoff-checker.time}")
     private int groupLifetime;
 
-    private final GroupRepository groupRepository;
-
     private final GroupService groupService;
 
     /**
      * Gathers dependencies and values needed for demo loader.
      */
-    public GroupDemoLoader(GroupService groupService, GroupRepository groupRepository) {
+    public GroupDemoLoader(GroupService groupService) {
         this.groupService = groupService;
-        this.groupRepository = groupRepository;
     }
 
     @Scheduled(initialDelayString = "${group.loader.initial-group-delay}",
@@ -54,19 +51,29 @@ public class GroupDemoLoader {
         loadGroups(initialGroupSize, periodicGroupAdditionCount).subscribe();
     }
 
-    public Flux<Group> loadGroups(int initialGroupSize,
+    public Flux<Void> loadGroups(int initialGroupSize,
                                   int periodicGroupAdditionCount) {
         final int groupsToAdd = initialStateLoaded
             ? periodicGroupAdditionCount : initialGroupSize;
 
         initialStateLoaded = true;
-        Group[] groups = new Group[groupsToAdd];
+        GroupCreateRequestEvent[] createRequestEvents = new GroupCreateRequestEvent[groupsToAdd];
 
         for (int i = 0; i < groupsToAdd; i++) {
-            groups[i] = groupService.generateGroup();
+            Group group = groupService.generateGroup();
+            createRequestEvents[i] = new GroupCreateRequestEvent(
+                UUID.randomUUID(), group.title(), group.description(),
+                group.maxGroupSize(), group.currentGroupSize(), "system", null,
+                Instant.now());
         }
 
-        return groupRepository.saveAll(Flux.just(groups));
+        return Flux.just(createRequestEvents)
+            .flatMap(groupService::createGroup)
+            .onErrorResume(throwable -> {
+                LOG.error("Error creating group", throwable);
+                // log to sentry
+                return Mono.empty();
+            });
     }
 
     @Scheduled(initialDelayString = "${group.cutoff-checker.initial-check-delay}",

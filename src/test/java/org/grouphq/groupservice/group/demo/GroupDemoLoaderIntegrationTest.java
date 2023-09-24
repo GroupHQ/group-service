@@ -66,7 +66,7 @@ class GroupDemoLoaderIntegrationTest {
 
     @BeforeEach
     void timesJobShouldHaveRun() {
-        this.groupDemoLoader = new GroupDemoLoader(groupService, groupRepository);
+        this.groupDemoLoader = new GroupDemoLoader(groupService);
         StepVerifier.create(groupRepository.deleteAll())
             .expectComplete()
             .verify(Duration.ofSeconds(1));
