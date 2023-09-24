@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Positive;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
  */
 @AllArgsConstructor
 @NoArgsConstructor(force = true)
-@Getter
+@Data
 public abstract class RequestEvent {
 
     @NotNull(message = "Event ID must be provided")

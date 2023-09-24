@@ -4,15 +4,17 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Instant;
 import java.util.UUID;
-import lombok.Getter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * Data class for the group leave request event.
  * <p>This class is used to request a member to leave a group.</p>
  */
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class GroupLeaveRequestEvent extends RequestEvent {
 
-    @Getter
     @NotNull(message = "Member ID must be provided")
     @Positive(message = "Member ID must be a positive value")
     private final Long memberId;

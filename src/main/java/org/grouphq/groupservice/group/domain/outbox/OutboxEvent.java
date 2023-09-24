@@ -1,13 +1,13 @@
 package org.grouphq.groupservice.group.domain.outbox;
 
+import java.time.Instant;
+import java.util.UUID;
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
-import java.time.Instant;
-import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.PersistenceCreator;
 import org.springframework.data.relational.core.mapping.Table;
@@ -31,7 +31,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Table("outbox")
 @NoArgsConstructor(force = true)
 @AllArgsConstructor(onConstructor = @__(@PersistenceCreator))
-@Getter
+@Data
 public class OutboxEvent {
     @Id
     private final UUID eventId;

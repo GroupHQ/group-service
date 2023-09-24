@@ -5,14 +5,16 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Instant;
 import java.util.UUID;
-import lombok.Getter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.validator.constraints.Length;
 
 /**
  * Data class for the group create request event.
  * <p>This class is used to request the creation of a group.</p>
  */
-@Getter
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class GroupCreateRequestEvent extends RequestEvent {
 
     @NotBlank(message = "Title must be provided and not blank")
