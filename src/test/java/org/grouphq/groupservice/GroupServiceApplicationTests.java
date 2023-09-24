@@ -23,9 +23,6 @@ import org.testcontainers.utility.DockerImageName;
 @Tag("IntegrationTest")
 class GroupServiceApplicationTests {
 
-    @Autowired
-    private ApplicationContext applicationContext;
-
     @Container
     static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
         new PostgreSQLContainer<>(DockerImageName.parse("postgres:14.4"));
@@ -45,7 +42,7 @@ class GroupServiceApplicationTests {
     }
 
     @Test
-    void contextLoads() {
+    void contextLoads(@Autowired ApplicationContext applicationContext) {
         assertThat(applicationContext).isNotNull();
     }
 

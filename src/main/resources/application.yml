@@ -41,26 +41,26 @@ spring:
   cloud:
     function:
       definition: |
-        handleGroupCreateRequests;
-        handleGroupStatusRequests;
-        handleGroupJoinRequests;
-        handleGroupLeaveRequests;
-        forwardProcessedEvents
+        groupCreateRequests;
+        groupStatusRequests;
+        groupJoinRequests;
+        groupLeaveRequests;
+        processedEvents
     stream:
       bindings:
-        handleGroupCreateRequests-in-0:
+        groupCreateRequests-in-0:
           destination: group-create-requests
           group: ${spring.application.name}
-        handleGroupStatusRequests-in-0:
+        groupStatusRequests-in-0:
           destination: group-status-requests
           group: ${spring.application.name}
-        handleGroupJoinRequests-in-0:
+        groupJoinRequests-in-0:
           destination: group-join-requests
           group: ${spring.application.name}
-        handleGroupLeaveRequests-in-0:
+        groupLeaveRequests-in-0:
           destination: group-leave-requests
           group: ${spring.application.name}
-        forwardProcessedEvents-out-0:
+        processedEvents-out-0:
           destination: group-event-results
   integration:
     poller:

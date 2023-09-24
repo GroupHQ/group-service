@@ -52,7 +52,7 @@ class GroupEventPublisherTest {
         given(outboxService.deleteEvent(outboxEvent[2]))
             .willReturn(Mono.just(outboxEvent[2]));
 
-        StepVerifier.create(groupEventPublisher.forwardProcessedEvents().get())
+        StepVerifier.create(groupEventPublisher.processedEvents().get())
             .expectNext(outboxEvent[0])
             .expectNext(outboxEvent[1])
             .expectNext(outboxEvent[2])

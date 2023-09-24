@@ -70,13 +70,13 @@ class GroupEventMemberIntegrationTest {
     private ObjectMapper objectMapper;
     private Group group;
 
-    @Value("${spring.cloud.stream.bindings.handleGroupJoinRequests-in-0.destination}")
+    @Value("${spring.cloud.stream.bindings.groupJoinRequests-in-0.destination}")
     private String joinHandlerDestination;
 
-    @Value("${spring.cloud.stream.bindings.handleGroupLeaveRequests-in-0.destination}")
+    @Value("${spring.cloud.stream.bindings.groupLeaveRequests-in-0.destination}")
     private String leaveHandlerDestination;
 
-    @Value("${spring.cloud.stream.bindings.forwardProcessedEvents-out-0.destination}")
+    @Value("${spring.cloud.stream.bindings.processedEvents-out-0.destination}")
     private String eventPublisherDestination;
 
     @Container

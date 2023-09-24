@@ -60,14 +60,14 @@ public class GroupEventHandler {
      * @return A consumer for handling group join requests.
      */
     @Bean
-    public Consumer<Flux<GroupJoinRequestEvent>> handleGroupJoinRequests() {
+    public Consumer<Flux<GroupJoinRequestEvent>> groupJoinRequests() {
         return flux -> flux
             .flatMap(groupJoinRequestEvent -> {
                 LOG.info("Group join request received: {}", groupJoinRequestEvent);
                 return validateRequest(groupJoinRequestEvent)
                     .then(memberService.joinGroup(groupJoinRequestEvent))
                     .doOnError(throwable ->
-                        LOG.error("Error joining group: {}", throwable.getMessage()))
+                        LOG.info("Cannot join group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
                         memberService.joinGroupFailed(groupJoinRequestEvent, throwable))
                     .doOnError(throwable -> LOG.error(
@@ -84,14 +84,14 @@ public class GroupEventHandler {
     }
 
     @Bean
-    public Consumer<Flux<GroupLeaveRequestEvent>> handleGroupLeaveRequests() {
+    public Consumer<Flux<GroupLeaveRequestEvent>> groupLeaveRequests() {
         return flux -> flux
             .flatMap(groupLeaveRequestEvent -> {
                 LOG.info("Group leave request received: {}", groupLeaveRequestEvent);
                 return validateRequest(groupLeaveRequestEvent)
                     .then(memberService.removeMember(groupLeaveRequestEvent))
                     .doOnError(throwable ->
-                        LOG.error("Error leaving group: {}", throwable.getMessage()))
+                        LOG.info("Cannot leave group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
                         memberService.removeMemberFailed(groupLeaveRequestEvent, throwable))
                     .doOnError(throwable -> LOG.error(
@@ -108,7 +108,7 @@ public class GroupEventHandler {
     }
 
     @Bean
-    public Consumer<Flux<GroupCreateRequestEvent>> handleGroupCreateRequests() {
+    public Consumer<Flux<GroupCreateRequestEvent>> groupCreateRequests() {
         return flux -> flux
             .flatMap(groupCreateRequestEvent -> {
                 LOG.info("Group create request received: {}", groupCreateRequestEvent);
@@ -116,7 +116,7 @@ public class GroupEventHandler {
                 return validateRequest(groupCreateRequestEvent)
                     .then(groupService.createGroup(groupCreateRequestEvent))
                     .doOnError(throwable ->
-                        LOG.error("Error creating group: {}", throwable.getMessage()))
+                        LOG.info("Cannot create group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
                         groupService.createGroupFailed(groupCreateRequestEvent, throwable))
                     .doOnError(throwable -> LOG.error(
@@ -133,7 +133,7 @@ public class GroupEventHandler {
     }
 
     @Bean
-    public Consumer<Flux<GroupStatusRequestEvent>> handleGroupStatusRequests() {
+    public Consumer<Flux<GroupStatusRequestEvent>> groupStatusRequests() {
         return flux -> flux
             .flatMap(groupStatusRequestEvent -> {
                 LOG.info("Group status request received: {}", groupStatusRequestEvent);
@@ -141,7 +141,7 @@ public class GroupEventHandler {
                 return validateRequest(groupStatusRequestEvent)
                     .then(groupService.updateGroupStatus(groupStatusRequestEvent))
                     .doOnError(throwable ->
-                        LOG.error("Error updating group status: {}", throwable.getMessage()))
+                        LOG.info("Cannot update group status: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
                         groupService.updateGroupStatusFailed(groupStatusRequestEvent, throwable))
                     .doOnError(throwable -> LOG.error(

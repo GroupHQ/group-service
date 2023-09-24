@@ -31,7 +31,7 @@ public class GroupEventPublisher {
     }
 
     @PollableBean
-    public Supplier<Flux<OutboxEvent>> forwardProcessedEvents() {
+    public Supplier<Flux<OutboxEvent>> processedEvents() {
         return () -> outboxRepository.findAllOrderByCreatedDateAsc()
             .limitRate(10)
             .flatMap(outboxEvent -> outboxService.deleteEvent(outboxEvent).thenReturn(outboxEvent)
