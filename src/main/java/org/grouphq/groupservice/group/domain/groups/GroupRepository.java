@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
  */
 public interface GroupRepository extends ReactiveCrudRepository<Group, Long> {
 
-    @Query("SELECT * FROM groups WHERE status = :status")
+    @Query("SELECT * FROM groups WHERE status = :status ORDER BY created_date DESC")
     Flux<Group> findGroupsByStatus(GroupStatus status);
 
     @Query("UPDATE groups SET status = :status WHERE id = :groupId")
