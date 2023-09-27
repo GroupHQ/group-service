@@ -2,6 +2,7 @@ package org.grouphq.groupservice.group.web;
 
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
+import org.grouphq.groupservice.group.domain.members.Member;
 import org.grouphq.groupservice.group.domain.members.MemberService;
 import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,9 +37,6 @@ public class GroupController {
         @PathVariable Long groupId
     ) {
         return memberService.getActiveMembers(groupId)
-            .map(member -> new PublicMember(
-                member.username(), member.groupId(), member.memberStatus(),
-                member.joinedDate(), member.exitedDate()
-            ));
+            .map(Member::toPublicMember);
     }
 }

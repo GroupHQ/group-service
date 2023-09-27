@@ -23,7 +23,9 @@ public class ExceptionMapper {
         Map.entry("Cannot update member because member status is not ACTIVE",
             new MemberNotActiveException("Cannot update member")),
         Map.entry("violates check constraint \"check_group_size_not_exceeding_max\"",
-            new GroupSizeException("Cannot create group"))
+            new GroupSizeException("Cannot create group")),
+        Map.entry("Cannot save member because the user has an active member in some group",
+            new UserAlreadyInGroupException("Cannot save member"))
     );
 
     public Throwable getBusinessException(Throwable throwable) {

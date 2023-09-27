@@ -281,7 +281,6 @@ public final class GroupTestUtility {
      *
      * @return a GroupLeaveRequestEvent object with all details.
      */
-
     public static GroupLeaveRequestEvent generateGroupLeaveRequestEvent(
         String websocketId, Long groupId, Long memberId) {
 

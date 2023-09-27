@@ -2,6 +2,7 @@ package org.grouphq.groupservice.group.domain.members;
 
 import java.time.Instant;
 import java.util.UUID;
+import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -14,8 +15,8 @@ import org.springframework.data.relational.core.mapping.Table;
  * A member model.
  *
  * @param id A unique ID belonging to a member
- * @param username Member's username
  * @param websocketId The user's websocket ID for the request
+ * @param username Member's username
  * @param groupId Group ID identifying the group the member belongs to
  * @param joinedDate Time user joined the group. Same time as createdDate
  * @param exitedDate Time user left the group. Initially null.
@@ -71,5 +72,12 @@ public record Member(
         return new Member(null, UUID.fromString(websocketId), username, groupId,
             MemberStatus.ACTIVE, null, null, null,
             null, null, null, 0);
+    }
+
+    public static PublicMember toPublicMember(Member member) {
+        return new PublicMember(
+            member.id(), member.username(), member.groupId(),
+            member.memberStatus(), member.joinedDate(), member.exitedDate()
+        );
     }
 }
