@@ -79,11 +79,11 @@ class GroupControllerTest {
             .willReturn(Flux.just(members));
 
         final List<PublicMember> publicMembers = List.of(
-            new PublicMember(members[0].username(), members[0].groupId(),
+            new PublicMember(members[0].id(), members[0].username(), members[0].groupId(),
                 members[0].memberStatus(), members[0].joinedDate(), members[0].exitedDate()),
-            new PublicMember(members[1].username(), members[1].groupId(),
+            new PublicMember(members[1].id(), members[1].username(), members[1].groupId(),
                 members[1].memberStatus(), members[1].joinedDate(), members[1].exitedDate()),
-            new PublicMember(members[2].username(), members[2].groupId(),
+            new PublicMember(members[2].id(), members[2].username(), members[2].groupId(),
                 members[2].memberStatus(), members[2].joinedDate(), members[2].exitedDate())
         );
 

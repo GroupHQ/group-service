@@ -119,15 +119,15 @@ class GroupControllerIntegrationTest {
             .verify(Duration.ofSeconds(1));
 
         final List<PublicMember> publicMembers = List.of(
-            new PublicMember(memberList.get(0).username(), memberList.get(0).groupId(),
-                memberList.get(0).memberStatus(), memberList.get(0).joinedDate(),
-                memberList.get(0).exitedDate()),
-            new PublicMember(memberList.get(1).username(), memberList.get(1).groupId(),
-                memberList.get(1).memberStatus(), memberList.get(1).joinedDate(),
-                memberList.get(1).exitedDate()),
-            new PublicMember(memberList.get(2).username(), memberList.get(2).groupId(),
-                memberList.get(2).memberStatus(), memberList.get(2).joinedDate(),
-                memberList.get(2).exitedDate())
+            new PublicMember(memberList.get(0).id(), memberList.get(0).username(),
+                memberList.get(0).groupId(), memberList.get(0).memberStatus(),
+                memberList.get(0).joinedDate(), memberList.get(0).exitedDate()),
+            new PublicMember(memberList.get(1).id(), memberList.get(1).username(),
+                memberList.get(1).groupId(), memberList.get(1).memberStatus(),
+                memberList.get(1).joinedDate(), memberList.get(1).exitedDate()),
+            new PublicMember(memberList.get(2).id(), memberList.get(2).username(),
+                memberList.get(2).groupId(), memberList.get(2).memberStatus(),
+                memberList.get(2).joinedDate(), memberList.get(2).exitedDate())
         );
 
         webTestClient
