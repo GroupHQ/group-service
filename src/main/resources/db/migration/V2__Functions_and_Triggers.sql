@@ -18,6 +18,13 @@ BEGIN
         WHERE id = NEW.group_id AND current_group_size = max_group_size
     ) THEN
         RAISE EXCEPTION 'Cannot save member with group because the group is full';
+
+    -- Check if the member is already in a group
+    ELSIF EXISTS (
+        SELECT 1 FROM members
+        WHERE websocket_id = NEW.websocket_id AND member_status = 'ACTIVE'
+    ) THEN
+        RAISE EXCEPTION 'Cannot save member because the user has an active member in some group.';
     END IF;
 
     -- Set new member status to ACTIVE and update group size

@@ -31,7 +31,7 @@ pmd {
     toolVersion = "6.55.+"
 }
 
-group = "com.grouphq"
+group = "org.grouphq"
 version = "0.0.1-SNAPSHOT"
 
 java {
@@ -76,12 +76,15 @@ dependencies {
     runtimeOnly 'org.postgresql:r2dbc-postgresql'
     runtimeOnly 'org.springframework:spring-jdbc'
 
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+
     testImplementation "org.springframework.boot:spring-boot-starter-test"
     testImplementation "io.projectreactor:reactor-test"
     testImplementation "org.springframework.amqp:spring-rabbit-test"
     testImplementation "org.springframework.cloud:spring-cloud-stream-test-binder"
     testImplementation "org.springframework.cloud:spring-cloud-stream-test-support"
+    testImplementation 'com.github.javafaker:javafaker:1.0.2'
 
     // Dependencies needed for Testcontainers
     testImplementation platform('org.testcontainers:testcontainers-bom:1.19.0')
@@ -125,7 +128,7 @@ tasks.register("testUnit", Test) {
 
     filter {
         // prevents the Cucumber Suite from loading in and running Cucumber tests
-        excludeTestsMatching("com.grouphq.groupservice.cucumber.*")
+        excludeTestsMatching("org.grouphq.groupservice.cucumber.*")
     }
 
     maxParallelForks = 4 // don"t run for tests that interact with the file system. Unit tests should be fine
@@ -144,7 +147,7 @@ tasks.register("testIntegration", Test) {
 
     filter {
         // prevents the Cucumber Suite from loading in and running Cucumber tests
-        excludeTestsMatching("com.grouphq.groupservice.cucumber.*")
+        excludeTestsMatching("org.grouphq.groupservice.cucumber.*")
     }
 }
 

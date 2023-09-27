@@ -24,10 +24,6 @@
     <rule ref="category/java/bestpractices.xml/ForLoopCanBeForeach" />
     <rule ref="category/java/bestpractices.xml/ForLoopVariableCount" />
     <rule ref="category/java/bestpractices.xml/GuardLogStatement" />
-    <rule ref="category/java/bestpractices.xml/JUnit4SuitesShouldUseSuiteAnnotation" />
-    <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseAfterAnnotation" />
-    <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseBeforeAnnotation" />
-    <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseTestAnnotation" />
     <rule ref="category/java/bestpractices.xml/JUnit5TestShouldBePackagePrivate" />
     <rule ref="category/java/bestpractices.xml/JUnitUseExpected" />
     <rule ref="category/java/bestpractices.xml/LiteralsFirstInComparisons" />
@@ -72,5 +68,11 @@
 
 <!--  We rely on abstract classes as base classes. This rule disagrees with that.  -->
 <!--    <rule ref="category/java/bestpractices.xml/AbstractClassWithoutAbstractMethod" />-->
+
+<!--  We aren't using JUnit 4  -->
+<!--    <rule ref="category/java/bestpractices.xml/JUnit4SuitesShouldUseSuiteAnnotation" />-->
+<!--    <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseAfterAnnotation" />-->
+<!--    <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseBeforeAnnotation" />-->
+<!--    <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseTestAnnotation" />-->
 
 </ruleset>
