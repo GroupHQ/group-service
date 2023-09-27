@@ -3,6 +3,8 @@ package org.grouphq.groupservice.cucumber.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javafaker.Faker;
+import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -44,7 +46,6 @@ import reactor.test.StepVerifier;
 @Import({DataConfig.class, SecurityConfig.class, TestChannelBinderConfiguration.class})
 @Tag("AcceptanceTest")
 public class MemberPolicy {
-    public static final String USERNAME = "username";
     private static Member member;
     private static Group group;
     private static OutboxEvent event;
@@ -76,6 +77,16 @@ public class MemberPolicy {
     @Value("${spring.cloud.stream.bindings.processedEvents-out-0.destination}")
     private String eventPublisherDestination;
 
+    private static String userId;
+
+    private static String username;
+
+    @Before
+    public void setUp() {
+        userId = UUID.randomUUID().toString();
+        username = new Faker().name().firstName();
+    }
+
     @Given("there is an active group")
     public void thereIsAnActiveGroup() {
         clearData();
@@ -93,7 +104,7 @@ public class MemberPolicy {
     public void iTryToJoinTheGroup() throws IOException {
         final GroupJoinRequestEvent requestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(
-                member.websocketId().toString(), member.username(), group.id());
+                userId, username, group.id());
 
         loadEvent(requestEvent, joinHandlerDestination);
         if (event.getEventStatus().equals(EventStatus.SUCCESSFUL)) {
@@ -135,7 +146,7 @@ public class MemberPolicy {
             .verify(Duration.ofSeconds(1));
 
         final GroupJoinRequestEvent requestEvent =
-            GroupTestUtility.generateGroupJoinRequestEvent(group.id());
+            GroupTestUtility.generateGroupJoinRequestEvent(userId, username, group.id());
 
         loadEvent(requestEvent, joinHandlerDestination);
         member = objectMapper.readValue(event.getEventData(), Member.class);
@@ -170,7 +181,7 @@ public class MemberPolicy {
 
     @And("I am a member of the group")
     public void iAmAMemberOfTheGroup() {
-        member = Member.of(UUID.randomUUID(), USERNAME, group.id());
+        member = Member.of(userId, username, group.id());
         StepVerifier.create(memberRepository.save(member))
             .consumeNextWith(member -> MemberPolicy.member = member)
             .expectComplete()
@@ -213,7 +224,7 @@ public class MemberPolicy {
             .thenCancel()
             .verify(Duration.ofSeconds(1));
 
-        member = Member.of(UUID.randomUUID(), USERNAME, group.id());
+        member = Member.of(userId, username, group.id());
 
         StepVerifier.create(memberRepository.save(member))
             .consumeNextWith(member -> MemberPolicy.member = member)
@@ -233,13 +244,10 @@ public class MemberPolicy {
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("No second group found"));
 
-                final Member secondMemberByUser =
-                    Member.of(member.websocketId(), "username2", secondGroupToJoin.id());
-
                 final GroupJoinRequestEvent requestEvent =
                     GroupTestUtility.generateGroupJoinRequestEvent(
-                        member.websocketId().toString(),
-                        secondMemberByUser.username(), secondGroupToJoin.id());
+                        userId,
+                        username, secondGroupToJoin.id());
 
                 inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
                 outputDestination.receive(1000, eventPublisherDestination);
@@ -275,7 +283,7 @@ public class MemberPolicy {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        final Member member = Member.of(UUID.randomUUID(), USERNAME, group.id());
+        final Member member = Member.of(UUID.randomUUID(), username, group.id());
 
         StepVerifier.create(memberRepository.save(member))
             .consumeNextWith(memberToJoin -> MemberPolicy.member = memberToJoin)
@@ -286,7 +294,7 @@ public class MemberPolicy {
     @When("I try to request that member leave the group")
     public void iTryToRequestThatMemberLeaveTheGroup() throws IOException {
         final GroupLeaveRequestEvent requestEvent =
-            GroupTestUtility.generateGroupLeaveRequestEvent(UUID.randomUUID().toString(),
+            GroupTestUtility.generateGroupLeaveRequestEvent(userId,
                 group.id(), member.id());
 
         loadEvent(requestEvent, leaveHandlerDestination);
