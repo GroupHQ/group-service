@@ -4,7 +4,7 @@ import java.util.UUID;
 import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
 import org.grouphq.groupservice.group.domain.exceptions.GroupDoesNotExistException;
 import org.grouphq.groupservice.group.domain.exceptions.MemberNotFoundException;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
+import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
 import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
@@ -24,18 +24,18 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
 
-    private final GroupRepository groupRepository;
+    private final GroupService groupService;
 
     private final OutboxService outboxService;
 
     private final ExceptionMapper exceptionMapper;
 
     public MemberService(MemberRepository memberRepository,
-                         GroupRepository groupRepository,
+                         GroupService groupService,
                          OutboxService outboxService,
                          ExceptionMapper exceptionMapper) {
         this.memberRepository = memberRepository;
-        this.groupRepository = groupRepository;
+        this.groupService = groupService;
         this.outboxService = outboxService;
         this.exceptionMapper = exceptionMapper;
     }
@@ -50,7 +50,7 @@ public class MemberService {
 
         LOG.debug("Handling join request: {}", event);
         return outboxService.errorIfEventPublished(event)
-            .flatMap(requestEvent -> groupRepository.findById(event.getAggregateId()))
+            .flatMap(requestEvent -> groupService.findById(event.getAggregateId()))
             .switchIfEmpty(Mono.error(new GroupDoesNotExistException("Cannot save member")))
             .flatMap(group -> memberRepository.save(
                 Member.of(event.getWebsocketId(), event.getUsername(), group.id())))
@@ -80,7 +80,7 @@ public class MemberService {
 
         LOG.debug("Handling remove member request: {}", event);
         return outboxService.errorIfEventPublished(event)
-            .flatMap(requestEvent -> groupRepository.findById(event.getAggregateId()))
+            .flatMap(requestEvent -> groupService.findById(event.getAggregateId()))
             .switchIfEmpty(Mono.error(new GroupDoesNotExistException("Cannot remove member")))
             .then(Mono.defer(() -> memberRepository.findMemberByIdAndWebsocketId(
                 event.getMemberId(), UUID.fromString(event.getWebsocketId()))))

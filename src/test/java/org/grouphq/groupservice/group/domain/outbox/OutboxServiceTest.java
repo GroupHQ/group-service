@@ -34,6 +34,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -86,6 +87,28 @@ class OutboxServiceTest {
                 outboxEvent.getEventData(), outboxEvent.getEventStatus(),
                 outboxEvent.getWebsocketId(), outboxEvent.getCreatedDate()
             );
+    }
+
+    @Test
+    @DisplayName("Gets outbox events from the database sorted by created date ascending")
+    void retrieveOutboxEvents() {
+        final OutboxEvent[] outboxEvents = {
+            GroupTestUtility.generateOutboxEvent(),
+            GroupTestUtility.generateOutboxEvent(),
+            GroupTestUtility.generateOutboxEvent()
+        };
+
+        given(outboxRepository.findAllOrderByCreatedDateAsc())
+            .willReturn(Flux.just(outboxEvents));
+
+        StepVerifier.create(outboxService.getOutboxEvents())
+            .expectNext(outboxEvents[0])
+            .expectNext(outboxEvents[1])
+            .expectNext(outboxEvents[2])
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
+        verify(outboxRepository).findAllOrderByCreatedDateAsc();
     }
 
     @Test

@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -41,6 +42,10 @@ public class OutboxService {
     public OutboxService(OutboxRepository outboxRepository, ObjectMapper objectMapper) {
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
+    }
+
+    public Flux<OutboxEvent> getOutboxEvents() {
+        return outboxRepository.findAllOrderByCreatedDateAsc();
     }
 
     public Mono<Void> saveOutboxEvent(OutboxEvent outboxEvent) {

@@ -37,6 +37,10 @@ public class GroupService {
         this.exceptionMapper = exceptionMapper;
     }
 
+    public Mono<Group> findById(Long id) {
+        return groupRepository.findById(id);
+    }
+
     public Flux<Group> getGroups() {
         return groupRepository.findGroupsByStatus(GroupStatus.ACTIVE);
     }
