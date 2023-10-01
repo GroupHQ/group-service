@@ -2,6 +2,8 @@ package org.grouphq.groupservice.group.domain.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.exceptions.EventAlreadyPublishedException;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.members.Member;
@@ -13,8 +15,6 @@ import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
 import org.grouphq.groupservice.group.event.daos.RequestEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -30,19 +30,14 @@ import reactor.core.publisher.Mono;
  * that logic to this OutboxService class. We also abstract the Outbox instance creation
  * (from our GroupUpdateResult model) to this class.</p>
  */
+@Slf4j
+@RequiredArgsConstructor
 @Service
 public class OutboxService {
-
-    private static final Logger LOG = LoggerFactory.getLogger(OutboxService.class);
 
     private final OutboxRepository outboxRepository;
 
     private final ObjectMapper objectMapper;
-
-    public OutboxService(OutboxRepository outboxRepository, ObjectMapper objectMapper) {
-        this.outboxRepository = outboxRepository;
-        this.objectMapper = objectMapper;
-    }
 
     public Flux<OutboxEvent> getOutboxEvents() {
         return outboxRepository.findAllOrderByCreatedDateAsc();
@@ -66,7 +61,7 @@ public class OutboxService {
         Member member) {
 
         return Mono.fromCallable(() -> {
-            LOG.debug("Creating Group Join Update Successful Result...");
+            log.debug("Creating Group Join Update Successful Result...");
             return OutboxEvent.of(
                 joinRequest.getEventId(),
                 joinRequest.getAggregateId(),
@@ -78,9 +73,9 @@ public class OutboxService {
             );
         })
         .doOnNext(result ->
-            LOG.info("Created Group Join Update Successful Result: {}", result))
+            log.info("Created Group Join Update Successful Result: {}", result))
         .doOnError(error ->
-            LOG.error("Error while creating Group Join Update Successful Result: ", error));
+            log.error("Error while creating Group Join Update Successful Result: ", error));
     }
 
     public Mono<OutboxEvent> createGroupJoinFailedEvent(
@@ -88,7 +83,7 @@ public class OutboxService {
             Throwable failure) {
 
         return Mono.fromCallable(() -> {
-            LOG.debug("Creating Group Join Update Failed Result...");
+            log.debug("Creating Group Join Update Failed Result...");
             return OutboxEvent.of(
                 joinRequest.getEventId(),
                 joinRequest.getAggregateId(),
@@ -100,15 +95,15 @@ public class OutboxService {
             );
         })
         .doOnNext(result ->
-            LOG.info("Created Group Join Update Failed Result: {}", result))
+            log.info("Created Group Join Update Failed Result: {}", result))
         .doOnError(error ->
-            LOG.error("Error while creating Group Join Update Failed Result: ", error));
+            log.error("Error while creating Group Join Update Failed Result: ", error));
     }
 
     public Mono<OutboxEvent> createGroupLeaveSuccessfulEvent(GroupLeaveRequestEvent leaveRequest) {
 
         return Mono.fromCallable(() -> {
-            LOG.debug("Creating Group Leave Update Successful Result...");
+            log.debug("Creating Group Leave Update Successful Result...");
             return OutboxEvent.of(
                 leaveRequest.getEventId(),
                 leaveRequest.getAggregateId(),
@@ -121,9 +116,9 @@ public class OutboxService {
             );
         })
             .doOnNext(result ->
-                LOG.info("Created Group Leave Update Successful Result: {}", result))
+                log.info("Created Group Leave Update Successful Result: {}", result))
             .doOnError(error ->
-                LOG.error("Error while creating Group Leave Update Successful Result: ", error));
+                log.error("Error while creating Group Leave Update Successful Result: ", error));
     }
 
     public Mono<OutboxEvent> createGroupLeaveFailedEvent(
@@ -131,7 +126,7 @@ public class OutboxService {
         Throwable failure) {
 
         return Mono.fromCallable(() -> {
-            LOG.debug("Creating Group Leave Update Successful Result...");
+            log.debug("Creating Group Leave Update Successful Result...");
             return OutboxEvent.of(
                 leaveRequest.getEventId(),
                 leaveRequest.getAggregateId(),
@@ -143,9 +138,9 @@ public class OutboxService {
             );
         })
             .doOnNext(result ->
-                LOG.info("Created Group Leave Update Failed Result: {}", result))
+                log.info("Created Group Leave Update Failed Result: {}", result))
             .doOnError(error ->
-                LOG.error("Error while creating Group Leave Update Failed Result: ", error));
+                log.error("Error while creating Group Leave Update Failed Result: ", error));
     }
 
     public Mono<OutboxEvent> createGroupCreateSuccessfulEvent(
@@ -153,7 +148,7 @@ public class OutboxService {
         Group group) {
 
         return Mono.fromCallable(() -> {
-            LOG.debug("Creating Group Create Update Successful Result...");
+            log.debug("Creating Group Create Update Successful Result...");
             return OutboxEvent.of(
                 createRequest.getEventId(),
                 group.id(),
@@ -165,9 +160,9 @@ public class OutboxService {
             );
         })
             .doOnNext(result ->
-                LOG.info("Created Group Create Update Successful Result: {}", result))
+                log.info("Created Group Create Update Successful Result: {}", result))
             .doOnError(error ->
-                LOG.error("Error while creating Group Create Update Successful Result: ", error));
+                log.error("Error while creating Group Create Update Successful Result: ", error));
     }
     
     public Mono<OutboxEvent> createGroupCreateFailedEvent(
@@ -175,7 +170,7 @@ public class OutboxService {
         Throwable failure) {
 
         return Mono.fromCallable(() -> {
-            LOG.debug("Creating Group Create Update Failed Result...");
+            log.debug("Creating Group Create Update Failed Result...");
             return OutboxEvent.of(
                 createRequest.getEventId(),
                 null,
@@ -187,16 +182,16 @@ public class OutboxService {
             );
         })
             .doOnNext(result ->
-                LOG.info("Created Group Create Update Failed Result: {}", result))
+                log.info("Created Group Create Update Failed Result: {}", result))
             .doOnError(error ->
-                LOG.error("Error while creating Group Create Update Failed Result: ", error));
+                log.error("Error while creating Group Create Update Failed Result: ", error));
     }
 
     public Mono<OutboxEvent> createGroupStatusSuccessfulEvent(
         GroupStatusRequestEvent statusRequest) {
 
         return Mono.fromCallable(() -> {
-            LOG.debug("Creating Group Status Update Successful Result...");
+            log.debug("Creating Group Status Update Successful Result...");
             return OutboxEvent.of(
                 statusRequest.getEventId(),
                 statusRequest.getAggregateId(),
@@ -209,9 +204,9 @@ public class OutboxService {
             );
         })
             .doOnNext(result ->
-                LOG.info("Created Group Status Update Successful Result: {}", result))
+                log.info("Created Group Status Update Successful Result: {}", result))
             .doOnError(error ->
-                LOG.error("Error while creating Group Status Update Successful Result: ", error));
+                log.error("Error while creating Group Status Update Successful Result: ", error));
     }
 
     public Mono<OutboxEvent> createGroupStatusFailedEvent(
@@ -219,7 +214,7 @@ public class OutboxService {
         Throwable failure) {
 
         return Mono.fromCallable(() -> {
-            LOG.debug("Creating Group Status Update Failed Result...");
+            log.debug("Creating Group Status Update Failed Result...");
             return OutboxEvent.of(
                 statusRequest.getEventId(),
                 statusRequest.getAggregateId(),
@@ -231,16 +226,16 @@ public class OutboxService {
             );
         })
             .doOnNext(result ->
-                LOG.info("Created Group Status Update Failed Result: {}", result))
+                log.info("Created Group Status Update Failed Result: {}", result))
             .doOnError(error ->
-                LOG.error("Error while creating Group Status Update Failed Result: ", error));
+                log.error("Error while creating Group Status Update Failed Result: ", error));
     }
 
     public <T extends RequestEvent> Mono<T> errorIfEventPublished(T event) {
         return outboxRepository.existsById(event.getEventId())
             .flatMap(exists -> {
                 if (exists) {
-                    LOG.debug("Event already posted: {}", event);
+                    log.debug("Event already posted: {}", event);
                     return Mono.error(new EventAlreadyPublishedException(
                         "Event already published"));
                 } else {

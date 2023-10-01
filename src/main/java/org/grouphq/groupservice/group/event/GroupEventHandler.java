@@ -5,6 +5,8 @@ import jakarta.validation.Validator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.members.MemberService;
 import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
@@ -12,8 +14,6 @@ import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
 import org.grouphq.groupservice.group.event.daos.RequestEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.publisher.Flux;
@@ -24,9 +24,10 @@ import reactor.core.publisher.Mono;
  * <p>This class is responsible for handling group events. It is a Spring Cloud Function
  * that is integrated with Spring Cloud Stream. It is a consumer of group events.</p>
  */
+@Slf4j
+@RequiredArgsConstructor
 @Configuration
 public class GroupEventHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(GroupEventHandler.class);
 
     private final GroupService groupService;
 
@@ -34,13 +35,6 @@ public class GroupEventHandler {
 
     private final Validator validator;
 
-    public GroupEventHandler(GroupService groupService,
-                             MemberService memberService,
-                             Validator validator) {
-        this.groupService = groupService;
-        this.memberService = memberService;
-        this.validator = validator;
-    }
 
     /**
      * A consumer for handling group join requests.
@@ -63,19 +57,19 @@ public class GroupEventHandler {
     public Consumer<Flux<GroupJoinRequestEvent>> groupJoinRequests() {
         return flux -> flux
             .flatMap(groupJoinRequestEvent -> {
-                LOG.info("Group join request received: {}", groupJoinRequestEvent);
+                log.info("Group join request received: {}", groupJoinRequestEvent);
                 return validateRequest(groupJoinRequestEvent)
                     .then(memberService.joinGroup(groupJoinRequestEvent))
                     .doOnError(throwable ->
-                        LOG.info("Cannot join group: {}", throwable.getMessage()))
+                        log.info("Cannot join group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
                         memberService.joinGroupFailed(groupJoinRequestEvent, throwable))
-                    .doOnError(throwable -> LOG.error(
+                    .doOnError(throwable -> log.error(
                         "Error processing group join failure: {}", throwable.getMessage()))
                     .onErrorResume(throwable -> Mono.empty());
             })
             .doOnError(throwable ->
-                LOG.error("""
+                log.error("""
                     Error received out-of-stream for GroupJoinRequestEvent consumer!
                     Attempting to resume stream""",
                     throwable))
@@ -87,19 +81,19 @@ public class GroupEventHandler {
     public Consumer<Flux<GroupLeaveRequestEvent>> groupLeaveRequests() {
         return flux -> flux
             .flatMap(groupLeaveRequestEvent -> {
-                LOG.info("Group leave request received: {}", groupLeaveRequestEvent);
+                log.info("Group leave request received: {}", groupLeaveRequestEvent);
                 return validateRequest(groupLeaveRequestEvent)
                     .then(memberService.removeMember(groupLeaveRequestEvent))
                     .doOnError(throwable ->
-                        LOG.info("Cannot leave group: {}", throwable.getMessage()))
+                        log.info("Cannot leave group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
                         memberService.removeMemberFailed(groupLeaveRequestEvent, throwable))
-                    .doOnError(throwable -> LOG.error(
+                    .doOnError(throwable -> log.error(
                         "Error processing group leave failure: {}", throwable.getMessage()))
                     .onErrorResume(throwable -> Mono.empty());
             })
             .doOnError(throwable ->
-                LOG.error("""
+                log.error("""
                     Error received out-of-stream for GroupLeaveRequestEvent consumer!
                     Attempting to resume stream""",
                     throwable))
@@ -111,20 +105,20 @@ public class GroupEventHandler {
     public Consumer<Flux<GroupCreateRequestEvent>> groupCreateRequests() {
         return flux -> flux
             .flatMap(groupCreateRequestEvent -> {
-                LOG.info("Group create request received: {}", groupCreateRequestEvent);
+                log.info("Group create request received: {}", groupCreateRequestEvent);
 
                 return validateRequest(groupCreateRequestEvent)
                     .then(groupService.createGroup(groupCreateRequestEvent))
                     .doOnError(throwable ->
-                        LOG.info("Cannot create group: {}", throwable.getMessage()))
+                        log.info("Cannot create group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
                         groupService.createGroupFailed(groupCreateRequestEvent, throwable))
-                    .doOnError(throwable -> LOG.error(
+                    .doOnError(throwable -> log.error(
                         "Error processing group creation failure: {}", throwable.getMessage()))
                     .onErrorResume(throwable -> Mono.empty());
             })
             .doOnError(throwable ->
-                LOG.error("""
+                log.error("""
                     Error received out-of-stream for GroupCreateRequestEvent consumer!
                     Attempting to resume stream""",
                     throwable))
@@ -136,20 +130,20 @@ public class GroupEventHandler {
     public Consumer<Flux<GroupStatusRequestEvent>> groupStatusRequests() {
         return flux -> flux
             .flatMap(groupStatusRequestEvent -> {
-                LOG.info("Group status request received: {}", groupStatusRequestEvent);
+                log.info("Group status request received: {}", groupStatusRequestEvent);
 
                 return validateRequest(groupStatusRequestEvent)
                     .then(groupService.updateGroupStatus(groupStatusRequestEvent))
                     .doOnError(throwable ->
-                        LOG.info("Cannot update group status: {}", throwable.getMessage()))
+                        log.info("Cannot update group status: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
                         groupService.updateGroupStatusFailed(groupStatusRequestEvent, throwable))
-                    .doOnError(throwable -> LOG.error(
+                    .doOnError(throwable -> log.error(
                         "Error processing group status update failure: {}", throwable.getMessage()))
                     .onErrorResume(throwable -> Mono.empty());
             })
             .doOnError(throwable ->
-                LOG.error("""
+                log.error("""
                     Error received out-of-stream for GroupStatusRequestEvent consumer!
                     Attempting to resume stream""",
                     throwable))

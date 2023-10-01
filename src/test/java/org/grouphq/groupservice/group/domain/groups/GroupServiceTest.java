@@ -88,7 +88,7 @@ class GroupServiceTest {
 
         given(groupRepository.findGroupsByStatus(GroupStatus.ACTIVE)).willReturn(mockedGroups);
 
-        final Flux<Group> retrievedGroups = groupService.getGroups();
+        final Flux<Group> retrievedGroups = groupService.getAllActiveGroups();
 
         StepVerifier.create(retrievedGroups)
             .expectNextMatches(group -> matchGroup(group, testGroups[0], 0))

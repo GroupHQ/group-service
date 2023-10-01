@@ -2,6 +2,8 @@ package org.grouphq.groupservice.group.domain.groups;
 
 import com.github.javafaker.Faker;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
 import org.grouphq.groupservice.group.domain.exceptions.GroupDoesNotExistException;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
@@ -12,15 +14,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.Logger;
-import reactor.util.Loggers;
 
 /**
  * A service for performing business logic related to groups.
  */
+@Slf4j
+@RequiredArgsConstructor
 @Service
 public class GroupService {
-    private static final Logger LOG = Loggers.getLogger(GroupService.class);
 
     private final OutboxService outboxService;
 
@@ -29,31 +30,26 @@ public class GroupService {
     private final ExceptionMapper exceptionMapper;
 
 
-    public GroupService(OutboxService outboxService,
-                        GroupRepository groupRepository,
-                        ExceptionMapper exceptionMapper) {
-        this.outboxService = outboxService;
-        this.groupRepository = groupRepository;
-        this.exceptionMapper = exceptionMapper;
-    }
-
     public Mono<Group> findById(Long id) {
+        log.info("Getting group by id: {}", id);
         return groupRepository.findById(id);
     }
 
-    public Flux<Group> getGroups() {
+    public Flux<Group> getAllActiveGroups() {
+        log.info("Getting all groups by active status");
         return groupRepository.findGroupsByStatus(GroupStatus.ACTIVE);
     }
 
     @Transactional
     public Mono<Void> createGroup(GroupCreateRequestEvent event) {
 
-        LOG.debug("Received create group request: {}", event);
+        log.info("Received create group request: {}", event);
         return outboxService.errorIfEventPublished(event)
             .flatMap(this::createGroupCreateEvent)
             .flatMap(outboxService::saveOutboxEvent)
-            .doOnSuccess(emptySave -> LOG.info("Fulfilled create request: {}", event))
-            .log(LOG)
+            .doOnSuccess(emptySave ->
+                log.info("Fulfilled create request. Created group and outbox event: {}", event))
+            .log()
             .onErrorMap(exceptionMapper::getBusinessException);
     }
 
@@ -72,27 +68,30 @@ public class GroupService {
     public Mono<Void> createGroupFailed(GroupCreateRequestEvent event,
                                         Throwable throwable) {
 
-        LOG.debug("Received create group failed request: {}", event);
+        log.info("Received create group request: {}", event);
         return outboxService.errorIfEventPublished(event)
             .flatMap(requestEvent -> outboxService.createGroupCreateFailedEvent(event, throwable))
             .flatMap(outboxService::saveOutboxEvent)
-            .doOnSuccess(emptySave -> LOG.info("Fulfilled create request: {}", event))
-            .log(LOG)
+            .doOnSuccess(emptySave ->
+                log.info("Fulfilled create request. Saved outbox event: {}", event))
+            .log()
             .onErrorMap(exceptionMapper::getBusinessException);
     }
 
     @Transactional
     public Mono<Void> updateGroupStatus(GroupStatusRequestEvent event) {
 
-        LOG.debug("Received update status failed request: {}", event);
+        log.info("Received update status request: {}", event);
         return outboxService.errorIfEventPublished(event)
             .flatMap(requestEvent -> groupRepository.findById(event.getAggregateId()))
             .switchIfEmpty(Mono.error(new GroupDoesNotExistException("Cannot update group status")))
             .flatMap(group -> updateStatus(group, event.getNewStatus()))
             .flatMap(savedGroup -> outboxService.createGroupStatusSuccessfulEvent(event))
             .flatMap(outboxService::saveOutboxEvent)
-            .doOnSuccess(emptySave -> LOG.info("Fulfilled update status request: {}", event))
-            .log(LOG)
+            .doOnSuccess(emptySave ->
+                log.info("Fulfilled update status request. "
+                    + "Updated status and saved outbox event: {}", event))
+            .log()
             .onErrorMap(exceptionMapper::getBusinessException);
     }
 
@@ -105,12 +104,12 @@ public class GroupService {
     public Mono<Void> updateGroupStatusFailed(GroupStatusRequestEvent event,
                                               Throwable throwable) {
 
-        LOG.debug("Received update status failed request: {}", event);
+        log.info("Received update status request: {}", event);
         return outboxService.errorIfEventPublished(event)
             .flatMap(requestEvent -> outboxService.createGroupStatusFailedEvent(event, throwable))
             .flatMap(outboxService::saveOutboxEvent)
-            .doOnSuccess(emptySave -> LOG.info("Fulfilled update status request: {}", event))
-            .log(LOG)
+            .doOnSuccess(emptySave -> log.info("Fulfilled update status request: {}", event))
+            .log()
             .onErrorMap(exceptionMapper::getBusinessException);
     }
 
