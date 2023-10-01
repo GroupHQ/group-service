@@ -63,20 +63,36 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-security"
     implementation "org.springframework.boot:spring-boot-starter-validation"
     implementation "org.springframework.boot:spring-boot-starter-webflux"
-    implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
-    implementation 'org.springframework.cloud:spring-cloud-function-context'
+    implementation "org.springframework.cloud:spring-cloud-starter-stream-rabbit"
+    implementation "org.springframework.cloud:spring-cloud-function-context"
 //    implementation "org.springframework.cloud:spring-cloud-starter-config"
-    implementation 'io.projectreactor:reactor-tools'
+    implementation "io.projectreactor:reactor-tools"
+    implementation 'net.java.dev.jna:jna:5.13.0'
 
-    implementation 'com.github.javafaker:javafaker:1.0.2'
-    implementation "io.sentry:sentry-spring-boot-starter-jakarta:6.28.0"
+    implementation "com.github.javafaker:javafaker:1.0.2"
+//    implementation "io.sentry:sentry-spring-boot-starter-jakarta:6.28.0"
 
-    runtimeOnly 'org.flywaydb:flyway-core'
-    runtimeOnly 'org.postgresql:postgresql'
-    runtimeOnly 'org.postgresql:r2dbc-postgresql'
-    runtimeOnly 'org.springframework:spring-jdbc'
+    runtimeOnly "org.flywaydb:flyway-core"
+    runtimeOnly "org.postgresql:postgresql"
+    runtimeOnly "org.postgresql:r2dbc-postgresql"
+    runtimeOnly "org.springframework:spring-jdbc"
 
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    // Micrometer tracing integration with OpenTelemetry and Zipkin
+    implementation platform("io.micrometer:micrometer-tracing-bom:latest.release")
+    implementation "io.micrometer:micrometer-tracing-bridge-otel"
+    implementation "io.opentelemetry:opentelemetry-exporter-zipkin"
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+    // Prometheus integration with Micrometer metrics
+    implementation "io.micrometer:micrometer-registry-prometheus"
+
+    // Ships logs to Loki
+    implementation "com.github.loki4j:loki-logback-appender:1.4.2"
+
+    // Reactor integration with Micrometer (also pulls in the context-propagation dependency)
+    implementation "io.projectreactor:reactor-core-micrometer:1.0.10"
+
+    developmentOnly "org.springframework.boot:spring-boot-devtools"
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 
     testImplementation "org.springframework.boot:spring-boot-starter-test"
@@ -84,14 +100,14 @@ dependencies {
     testImplementation "org.springframework.amqp:spring-rabbit-test"
     testImplementation "org.springframework.cloud:spring-cloud-stream-test-binder"
     testImplementation "org.springframework.cloud:spring-cloud-stream-test-support"
-    testImplementation 'com.github.javafaker:javafaker:1.0.2'
+    testImplementation "com.github.javafaker:javafaker:1.0.2"
 
     // Dependencies needed for Testcontainers
-    testImplementation platform('org.testcontainers:testcontainers-bom:1.19.0')
-    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:postgresql'
-    testImplementation 'org.testcontainers:r2dbc'
+    testImplementation platform("org.testcontainers:testcontainers-bom:1.19.0")
+    testImplementation "org.springframework.boot:spring-boot-testcontainers"
+    testImplementation "org.testcontainers:junit-jupiter"
+    testImplementation "org.testcontainers:postgresql"
+    testImplementation "org.testcontainers:r2dbc"
     testImplementation "org.testcontainers:rabbitmq"
 
     // Dependencies needed for Cucumber
@@ -104,10 +120,10 @@ dependencies {
     testImplementation("io.cucumber:cucumber-spring")
 
     // Lombok Dependencies
-    compileOnly 'org.projectlombok:lombok:1.18.28'
-    annotationProcessor 'org.projectlombok:lombok:1.18.28'
-    testCompileOnly 'org.projectlombok:lombok:1.18.28'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.28'
+    compileOnly "org.projectlombok:lombok:1.18.28"
+    annotationProcessor "org.projectlombok:lombok:1.18.28"
+    testCompileOnly "org.projectlombok:lombok:1.18.28"
+    testAnnotationProcessor "org.projectlombok:lombok:1.18.28"
 }
 
 dependencyManagement {

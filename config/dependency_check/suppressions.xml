@@ -41,4 +41,19 @@
         <packageUrl regex="true">^pkg:maven/io\.netty\.incubator/netty\-incubator\-codec\-native\-quic@.*$</packageUrl>
         <cve>CVE-2023-39533</cve>
     </suppress>
+
+
+    <!--"GzipSource does not handle an exception that might be raised when parsing a malformed gzip buffer.
+       This may lead to denial of service of the Okio client when handling a crafted GZIP archive,
+       by using the GzipSource class."
+
+       Included by: pkg:maven/io.opentelemetry/opentelemetry-exporter-zipkin@1.25.0
+       Analysis: We don't allow a way for users to create or send GZIP archives, so this is likely not a problem for us.-->
+    <suppress>
+        <notes><![CDATA[
+   file name: okio-jvm-3.0.0.jar
+   ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.squareup\.okio/okio\-jvm@.*$</packageUrl>
+        <cve>CVE-2023-3635</cve>
+    </suppress>
 </suppressions>

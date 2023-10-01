@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import reactor.core.publisher.Hooks;
 import reactor.tools.agent.ReactorDebugAgent;
 
 /**
@@ -16,6 +17,7 @@ public class GroupServiceApplication {
 
     public static void main(final String[] args) {
         ReactorDebugAgent.init();
+        Hooks.enableAutomaticContextPropagation();
         SpringApplication.run(GroupServiceApplication.class, args);
     }
 }
