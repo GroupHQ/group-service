@@ -49,7 +49,7 @@ class GroupControllerTest {
             GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE)
         };
 
-        given(groupService.getGroups()).willReturn(Flux.just(testGroups));
+        given(groupService.getAllActiveGroups()).willReturn(Flux.just(testGroups));
 
         webTestClient
             .get()
@@ -63,7 +63,7 @@ class GroupControllerTest {
                     "All groups received should be active");
             });
 
-        verify(groupService).getGroups();
+        verify(groupService).getAllActiveGroups();
     }
 
     @Test
@@ -102,7 +102,7 @@ class GroupControllerTest {
     @Test
     @DisplayName("Handle InternalServerError and send back corresponding response")
     void receiveInternalServerErrorWhenForUnrecognizedException() {
-        given(groupService.getGroups()).willReturn(Flux.error(new InternalServerError()));
+        given(groupService.getAllActiveGroups()).willReturn(Flux.error(new InternalServerError()));
 
         webTestClient
             .get()
@@ -116,6 +116,6 @@ class GroupControllerTest {
                     Rest assured, this will be investigated.
                     """));
 
-        verify(groupService).getGroups();
+        verify(groupService).getAllActiveGroups();
     }
 }

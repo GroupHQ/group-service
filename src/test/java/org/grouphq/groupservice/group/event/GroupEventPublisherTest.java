@@ -5,7 +5,6 @@ import static org.mockito.Mockito.verify;
 
 import java.time.Duration;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
-import org.grouphq.groupservice.group.domain.outbox.OutboxRepository;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.DisplayName;
@@ -23,9 +22,6 @@ import reactor.test.StepVerifier;
 @ExtendWith(MockitoExtension.class)
 class GroupEventPublisherTest {
     @Mock
-    private OutboxRepository outboxRepository;
-
-    @Mock
     private OutboxService outboxService;
 
     @InjectMocks
@@ -40,7 +36,7 @@ class GroupEventPublisherTest {
             GroupTestUtility.generateOutboxEvent(),
         };
 
-        given(outboxRepository.findAllOrderByCreatedDateAsc())
+        given(outboxService.getOutboxEvents())
             .willReturn(Flux.just(outboxEvent));
 
         given(outboxService.deleteEvent(outboxEvent[0]))
@@ -59,7 +55,7 @@ class GroupEventPublisherTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        verify(outboxRepository).findAllOrderByCreatedDateAsc();
+        verify(outboxService).getOutboxEvents();
         verify(outboxService).deleteEvent(outboxEvent[0]);
         verify(outboxService).deleteEvent(outboxEvent[1]);
         verify(outboxService).deleteEvent(outboxEvent[2]);

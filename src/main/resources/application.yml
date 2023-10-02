@@ -1,8 +1,8 @@
-sentry:
-  dsn: https://9fc07fdf536634533ad6956ca8f45d1e@o4505767793524736.ingest.sentry.io/4505767799095296
-  # Set traces-sample-rate to 1.0 to capture 100% of transactions for performance monitoring.
-  # We recommend adjusting this value in production.
-  traces-sample-rate: 1.0
+#sentry:
+#  dsn: https://9fc07fdf536634533ad6956ca8f45d1e@o4505767793524736.ingest.sentry.io/4505767799095296
+#  # Set traces-sample-rate to 1.0 to capture 100% of transactions for performance monitoring.
+#  # We recommend adjusting this value in production.
+#  traces-sample-rate: 1.0
 server:
   port: 9001
   shutdown: graceful
@@ -75,3 +75,39 @@ logging:
   level:
     root: info
     org.grouphq: debug
+  pattern:
+    level: "%5p[${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  endpoints:
+    web:
+      exposure:
+        include: flyway, health, heapdump, info, prometheus
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
+info:
+  system: GroupHQ

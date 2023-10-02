@@ -23,7 +23,7 @@ import org.grouphq.groupservice.group.domain.exceptions.GroupNotActiveException;
 import org.grouphq.groupservice.group.domain.exceptions.MemberNotActiveException;
 import org.grouphq.groupservice.group.domain.exceptions.MemberNotFoundException;
 import org.grouphq.groupservice.group.domain.groups.Group;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
+import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.outbox.ErrorData;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
@@ -58,7 +58,7 @@ class MemberServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
-    private GroupRepository groupRepository;
+    private GroupService groupService;
 
     @Mock
     private OutboxService outboxService;
@@ -77,7 +77,7 @@ class MemberServiceTest {
         group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
-        memberService = new MemberService(memberRepository, groupRepository,
+        memberService = new MemberService(memberRepository, groupService,
                 outboxService, exceptionMapper
         );
     }
@@ -121,7 +121,7 @@ class MemberServiceTest {
             any(GroupJoinRequestEvent.class), any(Member.class)))
             .willReturn(Mono.just(outboxEvent));
 
-        given(groupRepository.findById(group.id()))
+        given(groupService.findById(group.id()))
             .willReturn(Mono.just(group));
 
         given(memberRepository.save(any(Member.class)))
@@ -135,7 +135,7 @@ class MemberServiceTest {
             .verify(Duration.ofSeconds(1));
 
         verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(group.id());
+        verify(groupService).findById(group.id());
         verify(memberRepository).save(any(Member.class));
         verify(outboxService).createGroupJoinSuccessfulEvent(eq(event), any(Member.class));
         verify(outboxService).saveOutboxEvent(outboxEvent);
@@ -186,7 +186,7 @@ class MemberServiceTest {
         given(outboxService.errorIfEventPublished(event))
             .willReturn(Mono.just(event));
 
-        given(groupRepository.findById(inactiveGroup.id())).willReturn(Mono.just(inactiveGroup));
+        given(groupService.findById(inactiveGroup.id())).willReturn(Mono.just(inactiveGroup));
 
         given(memberRepository.save(any(Member.class))).willThrow(
             new DataAccessResourceFailureException(
@@ -201,7 +201,7 @@ class MemberServiceTest {
             .verify(Duration.ofSeconds(1));
 
         verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(inactiveGroup.id());
+        verify(groupService).findById(inactiveGroup.id());
         verify(memberRepository).save(any(Member.class));
         verify(exceptionMapper).getBusinessException(any(Throwable.class));
         verify(outboxService, never())
@@ -221,7 +221,7 @@ class MemberServiceTest {
         given(outboxService.errorIfEventPublished(event))
             .willReturn(Mono.just(event));
 
-        given(groupRepository.findById(fullGroup.id())).willReturn(Mono.just(fullGroup));
+        given(groupService.findById(fullGroup.id())).willReturn(Mono.just(fullGroup));
 
         given(memberRepository.save(any(Member.class))).willThrow(
             new DataAccessResourceFailureException(
@@ -236,7 +236,7 @@ class MemberServiceTest {
             .verify(Duration.ofSeconds(1));
 
         verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(fullGroup.id());
+        verify(groupService).findById(fullGroup.id());
         verify(memberRepository).save(any(Member.class));
         verify(exceptionMapper).getBusinessException(any(Throwable.class));
         verify(outboxService, never())
@@ -252,7 +252,7 @@ class MemberServiceTest {
         given(outboxService.errorIfEventPublished(event))
             .willReturn(Mono.just(event));
 
-        given(groupRepository.findById(group.id())).willReturn(Mono.just(group));
+        given(groupService.findById(group.id())).willReturn(Mono.just(group));
 
         given(memberRepository.save(any(Member.class))).willThrow(
             new DataAccessResourceFailureException(
@@ -267,7 +267,7 @@ class MemberServiceTest {
             .verify(Duration.ofSeconds(1));
 
         verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(group.id());
+        verify(groupService).findById(group.id());
         verify(memberRepository).save(any(Member.class));
         verify(exceptionMapper).getBusinessException(any(Throwable.class));
         verify(outboxService, never())
@@ -283,7 +283,7 @@ class MemberServiceTest {
         given(outboxService.errorIfEventPublished(event))
             .willReturn(Mono.just(event));
 
-        given(groupRepository.findById(event.getAggregateId()))
+        given(groupService.findById(event.getAggregateId()))
             .willReturn(Mono.empty());
 
         given(exceptionMapper.getBusinessException(any(Throwable.class)))
@@ -294,7 +294,7 @@ class MemberServiceTest {
             .verify(Duration.ofSeconds(1));
 
         verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(event.getAggregateId());
+        verify(groupService).findById(event.getAggregateId());
         verify(memberRepository, never()).save(any(Member.class));
         verify(outboxService, never()).createGroupJoinSuccessfulEvent(any(), any());
         verify(outboxService, never()).saveOutboxEvent(any());
@@ -318,7 +318,7 @@ class MemberServiceTest {
         given(outboxService.errorIfEventPublished(event))
             .willReturn(Mono.just(event));
 
-        given(groupRepository.findById(event.getAggregateId()))
+        given(groupService.findById(event.getAggregateId()))
             .willReturn(Mono.just(group));
 
         given(memberRepository.findMemberByIdAndWebsocketId(memberId, socketId))
@@ -338,7 +338,7 @@ class MemberServiceTest {
             .verify(Duration.ofSeconds(1));
 
         verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(event.getAggregateId());
+        verify(groupService).findById(event.getAggregateId());
         verify(memberRepository).findMemberByIdAndWebsocketId(memberId, socketId);
         verify(outboxService).createGroupLeaveSuccessfulEvent(event);
         verify(outboxService).saveOutboxEvent(outboxEvent);
@@ -353,7 +353,7 @@ class MemberServiceTest {
         given(outboxService.errorIfEventPublished(event))
             .willReturn(Mono.just(event));
 
-        given(groupRepository.findById(event.getAggregateId()))
+        given(groupService.findById(event.getAggregateId()))
             .willReturn(Mono.empty());
 
         given(exceptionMapper.getBusinessException(any(Throwable.class)))
@@ -364,7 +364,7 @@ class MemberServiceTest {
             .verify(Duration.ofSeconds(1));
 
         verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(event.getAggregateId());
+        verify(groupService).findById(event.getAggregateId());
         verify(memberRepository, never()).findMemberByIdAndWebsocketId(any(), any());
         verify(outboxService, never()).createGroupLeaveSuccessfulEvent(any());
         verify(outboxService, never()).saveOutboxEvent(any());
@@ -381,7 +381,7 @@ class MemberServiceTest {
         given(outboxService.errorIfEventPublished(event))
             .willReturn(Mono.just(event));
 
-        given(groupRepository.findById(event.getAggregateId()))
+        given(groupService.findById(event.getAggregateId()))
             .willReturn(Mono.just(group));
 
         final UUID socketId = UUID.fromString(event.getWebsocketId());
@@ -397,7 +397,7 @@ class MemberServiceTest {
             .verify(Duration.ofSeconds(1));
 
         verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(event.getAggregateId());
+        verify(groupService).findById(event.getAggregateId());
         verify(memberRepository).findMemberByIdAndWebsocketId(memberId, socketId);
         verify(outboxService, never()).createGroupLeaveSuccessfulEvent(any());
         verify(outboxService, never()).saveOutboxEvent(any());

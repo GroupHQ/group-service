@@ -1,5 +1,7 @@
 package org.grouphq.groupservice.group.web;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.members.Member;
@@ -16,26 +18,25 @@ import reactor.core.publisher.Flux;
  */
 @RestController
 @RequestMapping("groups")
+@RequiredArgsConstructor
+@Slf4j
 public class GroupController {
 
     private final GroupService groupService;
 
     private final MemberService memberService;
 
-    public GroupController(GroupService groupService, MemberService memberService) {
-        this.groupService = groupService;
-        this.memberService = memberService;
-    }
-
     @GetMapping
-    public Flux<Group> getAllGroups() {
-        return groupService.getGroups();
+    public Flux<Group> getAllActiveGroups() {
+        log.info("Getting all active groups");
+        return groupService.getAllActiveGroups();
     }
 
     @GetMapping("/{groupId}/members")
     public Flux<PublicMember> getActiveGroupMembers(
         @PathVariable Long groupId
     ) {
+        log.info("Getting all active group members for group with id: {}", groupId);
         return memberService.getActiveMembers(groupId)
             .map(Member::toPublicMember);
     }

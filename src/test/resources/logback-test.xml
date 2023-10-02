@@ -1,0 +1,2 @@
+<!--  Empty configuration for logback to prevent it from running during tests  -->
+<configuration />

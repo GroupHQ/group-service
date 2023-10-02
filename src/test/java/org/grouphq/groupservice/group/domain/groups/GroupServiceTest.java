@@ -63,6 +63,20 @@ class GroupServiceTest {
     }
 
     @Test
+    @DisplayName("Gets a group by id")
+    void getsGroupById() {
+        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
+        given(groupRepository.findById(group.id())).willReturn(Mono.just(group));
+
+        StepVerifier.create(groupService.findById(group.id()))
+                .expectNext(group)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1));
+
+        verify(groupRepository).findById(group.id());
+    }
+
+    @Test
     @DisplayName("Gets (active) groups")
     void retrievesOnlyActiveGroups() {
         final Group[] testGroups = {
@@ -74,7 +88,7 @@ class GroupServiceTest {
 
         given(groupRepository.findGroupsByStatus(GroupStatus.ACTIVE)).willReturn(mockedGroups);
 
-        final Flux<Group> retrievedGroups = groupService.getGroups();
+        final Flux<Group> retrievedGroups = groupService.getAllActiveGroups();
 
         StepVerifier.create(retrievedGroups)
             .expectNextMatches(group -> matchGroup(group, testGroups[0], 0))
