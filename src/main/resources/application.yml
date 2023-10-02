@@ -22,6 +22,8 @@ group:
     periodic-group-addition-count: 1
 
 spring:
+  autoconfigure:
+    exclude: org.springframework.boot.actuate.autoconfigure.tracing.zipkin.ZipkinAutoConfiguration
   application:
     name: group-service
   lifecycle:
@@ -38,7 +40,18 @@ spring:
     user: ${spring.r2dbc.username}
     password: ${spring.r2dbc.password}
     url: jdbc:postgresql://localhost:5432/grouphq_group
+  config:
+    import: optional:configserver:${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
   cloud:
+    config:
+      fail-fast: false
+      request-connect-timeout: 5000
+      request-read-timeout: 5000
+      retry:
+        multiplier: 1.5
+        initial-interval: 10000
+        max-interval: 50000
+        max-attempts: 6
     function:
       definition: |
         groupCreateRequests;
