@@ -81,7 +81,6 @@ dependencies {
     implementation platform("io.micrometer:micrometer-tracing-bom:latest.release")
     implementation "io.micrometer:micrometer-tracing-bridge-otel"
     implementation "io.opentelemetry:opentelemetry-exporter-zipkin"
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
 
     // Prometheus integration with Micrometer metrics
     implementation "io.micrometer:micrometer-registry-prometheus"
