@@ -65,9 +65,12 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-webflux"
     implementation "org.springframework.cloud:spring-cloud-starter-stream-rabbit"
     implementation "org.springframework.cloud:spring-cloud-function-context"
-//    implementation "org.springframework.cloud:spring-cloud-starter-config"
     implementation "io.projectreactor:reactor-tools"
-    implementation 'net.java.dev.jna:jna:5.13.0'
+    implementation "net.java.dev.jna:jna:5.13.0"
+
+    implementation "org.springframework.cloud:spring-cloud-starter-config"
+    implementation "org.springframework.retry:spring-retry"
+    implementation "org.springframework.boot:spring-boot-starter-aop"
 
     implementation "com.github.javafaker:javafaker:1.0.2"
 //    implementation "io.sentry:sentry-spring-boot-starter-jakarta:6.28.0"
