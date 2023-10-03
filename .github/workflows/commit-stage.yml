@@ -49,6 +49,12 @@ jobs:
         run: ./gradlew testAcceptance
       - name: Assembling Build
         run: ./gradlew assemble
+      - name: Setup arkade
+        uses: alexellis/setup-arkade@v3
+      - name: Validate Kubernetes manifests
+        run: |
+          arkade get kubeconform
+          kustomize build k8s | kubeconform -strict -summary -output json
   package:
     name: Package and Publish
     if: ${{ github.ref == 'refs/heads/main' }}
