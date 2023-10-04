@@ -58,6 +58,8 @@ spec:
           volumeMounts:
             - name: group-service-config-volume
               mountPath: /workspace/config
+      imagePullSecrets:
+        - name: ghcr-secret
       volumes:
         - name: group-service-config-volume
           configMap:
