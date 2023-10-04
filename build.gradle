@@ -16,7 +16,7 @@ dependencyCheck {
 
 // Java Code Style Checker Following (mostly) Google Style Guidelines
 checkstyle {
-    toolVersion = "10.12.2"
+    toolVersion = "10.12.4"
     configFile = file("${project.rootDir}/config/checkstyle/google_checks.xml")
     configProperties = [ "suppressionFile" : project(':').file('config/checkstyle/suppressions.xml')]
 }
@@ -55,6 +55,7 @@ bootBuildImage {
 
 ext {
     set("springCloudVersion", "2022.0.4")
+    set('otelVersion', "1.26.0")
 }
 
 dependencies {
@@ -80,16 +81,13 @@ dependencies {
     runtimeOnly "org.postgresql:r2dbc-postgresql"
     runtimeOnly "org.springframework:spring-jdbc"
 
-    // Micrometer tracing integration with OpenTelemetry and Zipkin
+    // Micrometer tracing integration with OpenTelemetry
     implementation platform("io.micrometer:micrometer-tracing-bom:latest.release")
     implementation "io.micrometer:micrometer-tracing-bridge-otel"
-    implementation "io.opentelemetry:opentelemetry-exporter-zipkin"
+    runtimeOnly "io.opentelemetry.javaagent:opentelemetry-javaagent:${otelVersion}"
 
     // Prometheus integration with Micrometer metrics
     implementation "io.micrometer:micrometer-registry-prometheus"
-
-    // Ships logs to Loki
-    implementation "com.github.loki4j:loki-logback-appender:1.4.2"
 
     // Reactor integration with Micrometer (also pulls in the context-propagation dependency)
     implementation "io.projectreactor:reactor-core-micrometer:1.0.10"
