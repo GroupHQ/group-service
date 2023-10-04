@@ -2,8 +2,6 @@ server:
   error:
     include-stacktrace: never
 spring:
-  profiles:
-    active: local
   r2dbc:
     url: r2dbc:postgresql://grouphq-postgres/grouphq_group
   flyway:
@@ -21,7 +19,3 @@ group:
     initial-group-size: 3
     periodic-group-addition-interval: 300
     periodic-group-addition-count: 1
-LOKI:
-  URL: http://loki/loki/api/v1/push
-ZIPKIN:
-  HOST: tempo
