@@ -37,8 +37,6 @@ spec:
               value: http://tempo
             - name: OTEL_METRICS_EXPORTER
               value: none
-            - name: BPL_JVM_THREAD_COUNT
-              value: "50"
             - name: BPL_DEBUG_ENABLED
               value: "true"
             - name: BPL_DEBUG_PORT
