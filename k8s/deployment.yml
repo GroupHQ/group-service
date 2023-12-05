@@ -29,14 +29,15 @@ spec:
           ports:
             - containerPort: 9001
           env:
-            - name: JAVA_TOOL_OPTIONS
-              value: -javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.26.0.jar
-            - name: OTEL_SERVICE_NAME
-              value: group-service
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://tempo
-            - name: OTEL_METRICS_EXPORTER
-              value: none
+#             Disabled observability locally only (to be configured later)
+#            - name: JAVA_TOOL_OPTIONS
+#              value: -javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.26.0.jar
+#            - name: OTEL_SERVICE_NAME
+#              value: group-service
+#            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+#              value: http://tempo
+#            - name: OTEL_METRICS_EXPORTER
+#              value: none
             - name: BPL_DEBUG_ENABLED
               value: "true"
             - name: BPL_DEBUG_PORT
@@ -45,13 +46,19 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: 9001
-            initialDelaySeconds: 60
+            failureThreshold: 1
+            periodSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 9001
+            failureThreshold: 50
             periodSeconds: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 9001
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 5
           volumeMounts:
             - name: group-service-config-volume
