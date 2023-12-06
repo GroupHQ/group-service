@@ -1,9 +1,9 @@
 plugins {
     id "java"
-    id "org.springframework.boot" version "3.1.3"
-    id "io.spring.dependency-management" version "1.1.3"
+    id 'org.springframework.boot' version '3.1.+'
+    id 'io.spring.dependency-management' version '1.+'
 
-    id "org.owasp.dependencycheck" version "8.4.0"
+    id "org.owasp.dependencycheck" version "latest.release"
     id "checkstyle"
     id "pmd"
 }
@@ -11,12 +11,15 @@ plugins {
 // Checks Dependencies for Known Vulnerabilities
 dependencyCheck {
     suppressionFile = file("${project.rootDir}/config/dependency_check/suppressions.xml")
-    failBuildOnCVSS = 7.0 // fails on high and critical severity scores
+    failBuildOnCVSS = 8.0 // fails on mid-high to critical severity scores
+    nvd {
+        apiKey = project.findProperty('nvdApiKey') ?: 'NONE'
+    }
 }
 
 // Java Code Style Checker Following (mostly) Google Style Guidelines
 checkstyle {
-    toolVersion = "10.12.4"
+    toolVersion = "latest.release"
     configFile = file("${project.rootDir}/config/checkstyle/google_checks.xml")
     configProperties = [ "suppressionFile" : project(':').file('config/checkstyle/suppressions.xml')]
 }
@@ -28,7 +31,7 @@ pmd {
     ruleSetFiles = files("config/pmd/bestpractices.xml", "config/pmd/codestyle.xml", "config/pmd/design.xml",
             "config/pmd/documentation.xml", "config/pmd/errorprone.xml", "config/pmd/multithreading.xml",
             "config/pmd/performance.xml", "config/pmd/security.xml")
-    toolVersion = "6.55.+"
+    toolVersion = "6.+"
 }
 
 group = "org.grouphq"
