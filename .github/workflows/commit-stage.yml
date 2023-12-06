@@ -5,6 +5,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: grouphq/group-service
   VERSION: ${{ github.sha }}
+  NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
 
 jobs:
   build:
@@ -32,7 +33,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Dependency vulnerability scanning
-        run: ./gradlew dependencyCheckAnalyze --stacktrace -PnvdApiKey=${{ env.NVD_API_KEY }} -Dorg.gradle.jvmargs="-Xmx6144m"
+        run: ./gradlew dependencyCheckAnalyze --stacktrace -PnvdApiKey=${{ env.NVD_API_KEY }}
       - name: Checking code style
         run: |
           ./gradlew checkstyleMain
