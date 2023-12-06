@@ -32,7 +32,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Dependency vulnerability scanning
-        run: ./gradlew dependencyCheckAnalyze --stacktrace -PnvdApiKey=${{ env.NVD_API_KEY }}
+        run: ./gradlew dependencyCheckAnalyze --stacktrace -PnvdApiKey=${{ env.NVD_API_KEY }} -Dorg.gradle.jvmargs="-Xmx6144m"
       - name: Checking code style
         run: |
           ./gradlew checkstyleMain
