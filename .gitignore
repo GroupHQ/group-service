@@ -27,6 +27,7 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+bash.exe.stackdump
 
 ### NetBeans ###
 /nbproject/private/
