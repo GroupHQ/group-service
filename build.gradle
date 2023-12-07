@@ -45,6 +45,10 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+
+    checkstyle.resolutionStrategy.capabilitiesResolution.withCapability("com.google.collections:google-collections") {
+        select("com.google.guava:guava:0")
+    }
 }
 
 repositories {
