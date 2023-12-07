@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: group-service
-          image: ghcr.io/grouphq/group-sync
+          image: ghcr.io/grouphq/group-service
           imagePullPolicy: IfNotPresent
           lifecycle:
             preStop:
