@@ -127,10 +127,10 @@ dependencies {
     testImplementation("io.cucumber:cucumber-spring")
 
     // Lombok Dependencies
-    compileOnly "org.projectlombok:lombok:1.18.28"
-    annotationProcessor "org.projectlombok:lombok:1.18.28"
-    testCompileOnly "org.projectlombok:lombok:1.18.28"
-    testAnnotationProcessor "org.projectlombok:lombok:1.18.28"
+    compileOnly "org.projectlombok:lombok"
+    annotationProcessor "org.projectlombok:lombok"
+    testCompileOnly "org.projectlombok:lombok"
+    testAnnotationProcessor "org.projectlombok:lombok"
 }
 
 dependencyManagement {
