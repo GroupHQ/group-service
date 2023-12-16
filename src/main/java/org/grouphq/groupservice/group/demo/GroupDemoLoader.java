@@ -1,5 +1,6 @@
 package org.grouphq.groupservice.group.demo;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -61,6 +62,7 @@ public class GroupDemoLoader {
         }
 
         return Flux.just(createRequestEvents)
+            .delayElements(Duration.ofMillis(100))
             .flatMap(groupService::createGroup)
             .onErrorResume(throwable -> {
                 log.error("Error creating group", throwable);
