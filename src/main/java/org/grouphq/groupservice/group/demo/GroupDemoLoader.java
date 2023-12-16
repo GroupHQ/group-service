@@ -62,7 +62,7 @@ public class GroupDemoLoader {
         }
 
         return Flux.just(createRequestEvents)
-            .delayElements(Duration.ofMillis(100))
+            .delayElements(Duration.ofSeconds(1))
             .flatMap(groupService::createGroup)
             .onErrorResume(throwable -> {
                 log.error("Error creating group", throwable);
