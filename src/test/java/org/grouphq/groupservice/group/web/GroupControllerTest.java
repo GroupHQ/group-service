@@ -30,7 +30,7 @@ import reactor.core.publisher.Flux;
 @Tag("IntegrationTest")
 class GroupControllerTest {
 
-    private static final String GROUPS_ENDPOINT = "/groups";
+    private static final String GROUPS_ENDPOINT = "/api/groups";
 
     @Autowired
     private WebTestClient webTestClient;
@@ -89,7 +89,7 @@ class GroupControllerTest {
 
         webTestClient
             .get()
-            .uri("/groups/1234/members")
+            .uri("/api/groups/1234/members")
             .exchange()
             .expectStatus().is2xxSuccessful()
             .expectBodyList(PublicMember.class).value(retrievedMembers ->

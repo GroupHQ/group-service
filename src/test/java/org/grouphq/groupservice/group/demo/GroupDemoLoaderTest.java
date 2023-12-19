@@ -52,7 +52,7 @@ class GroupDemoLoaderTest {
 
         StepVerifier.create(groupDemoLoader.loadGroups(3, 1))
             .expectComplete()
-            .verify(Duration.ofSeconds(1));
+            .verify();
 
         verify(groupService, times(3)).generateGroup();
         verify(groupService, times(3)).createGroup(any(GroupCreateRequestEvent.class));

@@ -17,7 +17,7 @@ import reactor.core.publisher.Flux;
  * A controller containing endpoints for accessing and managing group info.
  */
 @RestController
-@RequestMapping("groups")
+@RequestMapping("api/groups")
 @RequiredArgsConstructor
 @Slf4j
 public class GroupController {
