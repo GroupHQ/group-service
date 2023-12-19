@@ -82,7 +82,7 @@ class GroupControllerIntegrationTest {
 
         webTestClient
             .get()
-            .uri("/groups")
+            .uri("/api/groups")
             .exchange()
             .expectStatus().is2xxSuccessful()
             .expectBodyList(Group.class).value(retrievedGroups -> {
@@ -132,7 +132,7 @@ class GroupControllerIntegrationTest {
 
         webTestClient
             .get()
-            .uri("/groups/" + groupId + "/members")
+            .uri("/api/groups/" + groupId + "/members")
             .exchange()
             .expectStatus().is2xxSuccessful()
             .expectBodyList(PublicMember.class).value(retrievedMembers -> {

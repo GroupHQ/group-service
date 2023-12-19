@@ -54,7 +54,7 @@ public class ActiveGroupsPolicy {
     public void iRequestGroups() {
         groupResponse = webTestClient
             .get()
-            .uri("/groups")
+            .uri("/api/groups")
             .exchange()
             .expectStatus().is2xxSuccessful()
             .expectBodyList(Group.class);
