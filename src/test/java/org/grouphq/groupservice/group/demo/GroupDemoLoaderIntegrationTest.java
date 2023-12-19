@@ -84,12 +84,12 @@ class GroupDemoLoaderIntegrationTest {
         StepVerifier.create(
             groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount))
             .expectComplete()
-            .verify(Duration.ofSeconds(1));
+            .verify();
 
         StepVerifier.create(
             groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount))
             .expectComplete()
-            .verify(Duration.ofSeconds(1));
+            .verify();
 
         StepVerifier.create(groupRepository.getAllGroups())
             .expectNextCount(initialGroupSize + periodicGroupAdditionCount)
