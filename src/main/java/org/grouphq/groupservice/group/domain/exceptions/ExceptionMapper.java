@@ -22,8 +22,12 @@ public class ExceptionMapper {
             new GroupIsFullException("Cannot save member")),
         Map.entry("Cannot update member because member status is not ACTIVE",
             new MemberNotActiveException("Cannot update member")),
-        Map.entry("violates check constraint \"check_group_size_not_exceeding_max\"",
-            new GroupSizeException("Cannot create group")),
+        Map.entry("Group has reached its maximum size",
+            new GroupSizeException("Cannot join group because this group has reached its maximum size")),
+        Map.entry("new row for relation \"groups\" "
+                + "violates check constraint \"groups_max_group_size_check\"",
+            new GroupSizeException("Cannot create group due to invalid max size value. "
+                + "Max size should be at least 2")),
         Map.entry("Cannot save member because the user has an active member in some group",
             new UserAlreadyInGroupException("Cannot save member"))
     );

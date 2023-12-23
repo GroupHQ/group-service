@@ -17,10 +17,10 @@ import java.util.UUID;
 import org.grouphq.groupservice.config.DataConfig;
 import org.grouphq.groupservice.config.SecurityConfig;
 import org.grouphq.groupservice.group.domain.groups.Group;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
+import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.members.Member;
-import org.grouphq.groupservice.group.domain.members.MemberRepository;
+import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
@@ -91,11 +91,11 @@ public class MemberPolicy {
     public void thereIsAnActiveGroup() {
         clearData();
 
-        final Group group = Group.of("Title", "Description", 10, 5,
+        final Group group = Group.of("Title", "Description", 10,
             GroupStatus.ACTIVE);
 
         StepVerifier.create(groupRepository.save(group))
-            .consumeNextWith(groupToJoin -> MemberPolicy.group = groupToJoin)
+            .assertNext(groupToJoin -> MemberPolicy.group = groupToJoin)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
     }
@@ -124,24 +124,15 @@ public class MemberPolicy {
             .verifyComplete();
     }
 
-    @And("the group's current member size should increase by one")
-    public void theGroupSCurrentMemberSizeShouldIncreaseByOne() {
-        StepVerifier.create(groupRepository.findById(group.id()))
-            .expectNextMatches(groupAfterTrigger ->
-                groupAfterTrigger.currentGroupSize() == group.currentGroupSize() + 1)
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-    }
-
     @Given("I am in an active group")
     public void iAmInAnActiveGroup() throws IOException {
         clearData();
 
         final Group groupMemberWillBeIn = Group.of("Title", "Description",
-            10, 5, GroupStatus.ACTIVE);
+            10, GroupStatus.ACTIVE);
 
         StepVerifier.create(groupRepository.save(groupMemberWillBeIn))
-            .consumeNextWith(groupToJoin -> MemberPolicy.group = groupToJoin)
+            .assertNext(groupToJoin -> MemberPolicy.group = groupToJoin)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
@@ -168,22 +159,11 @@ public class MemberPolicy {
             .verify(Duration.ofSeconds(1));
     }
 
-    @And("the group's current member size should decrease by one")
-    public void theGroupSCurrentMemberSizeShouldDecreaseByOne() {
-        // We haven't updated the group object since we initially joined,
-        // so it's currentGroupSize is what the size should be after leaving.
-        StepVerifier.create(groupRepository.findById(group.id()))
-            .expectNextMatches(groupAfterTrigger ->
-                groupAfterTrigger.currentGroupSize() == group.currentGroupSize())
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-    }
-
     @And("I am a member of the group")
     public void iAmAMemberOfTheGroup() {
         member = Member.of(userId, username, group.id());
         StepVerifier.create(memberRepository.save(member))
-            .consumeNextWith(member -> MemberPolicy.member = member)
+            .assertNext(member -> MemberPolicy.member = member)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
     }
@@ -220,14 +200,14 @@ public class MemberPolicy {
     @And("I am a member of one group")
     public void iAmAMemberOfOneGroup() {
         StepVerifier.create(groupRepository.findAll())
-            .consumeNextWith(group -> MemberPolicy.group = group)
+            .assertNext(group -> MemberPolicy.group = group)
             .thenCancel()
             .verify(Duration.ofSeconds(1));
 
         member = Member.of(userId, username, group.id());
 
         StepVerifier.create(memberRepository.save(member))
-            .consumeNextWith(member -> MemberPolicy.member = member)
+            .assertNext(member -> MemberPolicy.member = member)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
     }
@@ -267,7 +247,7 @@ public class MemberPolicy {
             .first();
 
         StepVerifier.create(groupsJoined)
-            .consumeNextWith(result -> assertThat(result.get("count")).isEqualTo(1L))
+            .assertNext(result -> assertThat(result.get("count")).isEqualTo(1L))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
     }
@@ -279,14 +259,14 @@ public class MemberPolicy {
         final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
 
         StepVerifier.create(groupRepository.save(group))
-            .consumeNextWith(groupToJoin -> MemberPolicy.group = groupToJoin)
+            .assertNext(groupToJoin -> MemberPolicy.group = groupToJoin)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
         final Member member = Member.of(UUID.randomUUID(), username, group.id());
 
         StepVerifier.create(memberRepository.save(member))
-            .consumeNextWith(memberToJoin -> MemberPolicy.member = memberToJoin)
+            .assertNext(memberToJoin -> MemberPolicy.member = memberToJoin)
             .expectComplete()
             .verify(Duration.ofSeconds(1));
     }

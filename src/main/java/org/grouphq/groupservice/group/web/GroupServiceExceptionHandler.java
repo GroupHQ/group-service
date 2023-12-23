@@ -37,6 +37,6 @@ public class GroupServiceExceptionHandler {
     @ExceptionHandler(InternalServerError.class)
     public ResponseEntity<String> handleInternalServerError(
         InternalServerError exception) {
-        return new ResponseEntity<>(exception.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>("Sorry, something went wrong!", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

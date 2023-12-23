@@ -2,7 +2,6 @@ package org.grouphq.groupservice.group.event.daos;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.Data;
@@ -29,9 +28,6 @@ public class GroupCreateRequestEvent extends RequestEvent {
     @Positive(message = "Max group size must be a positive value")
     private final int maxGroupSize;
 
-    @PositiveOrZero(message = "Current group size must be a positive value (or 0)")
-    private final int currentGroupSize;
-
     @NotBlank(message = "Created by must be provided and not blank")
     @Length(min = 2, max = 64,
         message = "Created by must be at least 2 characters and no more than 64 characters")
@@ -42,7 +38,6 @@ public class GroupCreateRequestEvent extends RequestEvent {
         String title,
         String description,
         int maxGroupSize,
-        int currentGroupSize,
         String createdBy,
         String websocketId,
         Instant createdDate
@@ -51,7 +46,6 @@ public class GroupCreateRequestEvent extends RequestEvent {
         this.title = title;
         this.description = description;
         this.maxGroupSize = maxGroupSize;
-        this.currentGroupSize = currentGroupSize;
         this.createdBy = createdBy;
     }
 }

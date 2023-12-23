@@ -29,9 +29,10 @@ public class GroupController {
     @GetMapping
     public Flux<Group> getAllActiveGroups() {
         log.info("Getting all active groups");
-        return groupService.getAllActiveGroups();
+        return groupService.findActiveGroupsWithMembers();
     }
 
+    @Deprecated
     @GetMapping("/{groupId}/members")
     public Flux<PublicMember> getActiveGroupMembers(
         @PathVariable Long groupId

@@ -9,10 +9,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.grouphq.groupservice.config.DataConfig;
 import org.grouphq.groupservice.config.SecurityConfig;
 import org.grouphq.groupservice.group.domain.groups.Group;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
+import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
 import org.grouphq.groupservice.group.domain.members.Member;
-import org.grouphq.groupservice.group.domain.members.MemberRepository;
+import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import org.junit.jupiter.api.DisplayName;
@@ -97,7 +97,7 @@ class GroupControllerIntegrationTest {
     @DisplayName("Allow users to retrieve active group members as public")
     void retrieveActiveGroupMembersAsPublic() {
         final Long groupId = createGroup(Group.of("Populated Group", "We got pumpkins!",
-            5, 0, GroupStatus.ACTIVE));
+            5, GroupStatus.ACTIVE));
 
         final Member[] members = {
             Member.of("User 1", groupId),
@@ -121,13 +121,13 @@ class GroupControllerIntegrationTest {
         final List<PublicMember> publicMembers = List.of(
             new PublicMember(memberList.get(0).id(), memberList.get(0).username(),
                 memberList.get(0).groupId(), memberList.get(0).memberStatus(),
-                memberList.get(0).joinedDate(), memberList.get(0).exitedDate()),
+                memberList.get(0).createdDate(), memberList.get(0).exitedDate()),
             new PublicMember(memberList.get(1).id(), memberList.get(1).username(),
                 memberList.get(1).groupId(), memberList.get(1).memberStatus(),
-                memberList.get(1).joinedDate(), memberList.get(1).exitedDate()),
+                memberList.get(1).createdDate(), memberList.get(1).exitedDate()),
             new PublicMember(memberList.get(2).id(), memberList.get(2).username(),
                 memberList.get(2).groupId(), memberList.get(2).memberStatus(),
-                memberList.get(2).joinedDate(), memberList.get(2).exitedDate())
+                memberList.get(2).createdDate(), memberList.get(2).exitedDate())
         );
 
         webTestClient
@@ -154,7 +154,7 @@ class GroupControllerIntegrationTest {
         final AtomicReference<Long> groupId = new AtomicReference<>();
 
         StepVerifier.create(groupRepository.save(newGroup))
-            .consumeNextWith(group -> groupId.set(group.id()))
+            .assertNext(group -> groupId.set(group.id()))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 

@@ -31,7 +31,6 @@ class GroupCreateRequestEventJsonTest {
             "Group Title",
             "Group Description",
             10,
-            0,
             "User",
             "websocketId",
             timestamp

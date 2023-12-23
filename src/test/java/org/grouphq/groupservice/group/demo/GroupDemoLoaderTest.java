@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.grouphq.groupservice.group.domain.groups.Group;
+import org.grouphq.groupservice.group.domain.groups.GroupEventService;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
@@ -37,6 +38,9 @@ class GroupDemoLoaderTest {
     @Mock
     private GroupService groupService;
 
+    @Mock
+    private GroupEventService groupEventService;
+
     @InjectMocks
     private GroupDemoLoader groupDemoLoader;
 
@@ -47,7 +51,7 @@ class GroupDemoLoaderTest {
 
         given(groupService.generateGroup()).willReturn(mockGroup);
 
-        given(groupService.createGroup(any(GroupCreateRequestEvent.class)))
+        given(groupEventService.createGroup(any(GroupCreateRequestEvent.class)))
             .willReturn(Mono.empty());
 
         StepVerifier.create(groupDemoLoader.loadGroups(3, 1))
@@ -55,7 +59,7 @@ class GroupDemoLoaderTest {
             .verify();
 
         verify(groupService, times(3)).generateGroup();
-        verify(groupService, times(3)).createGroup(any(GroupCreateRequestEvent.class));
+        verify(groupEventService, times(3)).createGroup(any(GroupCreateRequestEvent.class));
     }
 
     @Test
@@ -64,18 +68,18 @@ class GroupDemoLoaderTest {
         final Instant cutoffTime = Instant.now().minus(1, ChronoUnit.HOURS);
         final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
 
-        given(groupService.getActiveGroupsPastCutoffDate(cutoffTime))
+        given(groupService.findActiveGroupsPastCutoffDate(cutoffTime))
             .willReturn(Flux.just(group));
 
-        given(groupService.updateGroupStatus(any(GroupStatusRequestEvent.class)))
+        given(groupEventService.updateGroupStatus(any(GroupStatusRequestEvent.class)))
             .willReturn(Mono.empty());
 
         StepVerifier.create(groupDemoLoader.expireGroups(cutoffTime))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        verify(groupService).getActiveGroupsPastCutoffDate(cutoffTime);
-        verify(groupService).updateGroupStatus(
+        verify(groupService).findActiveGroupsPastCutoffDate(cutoffTime);
+        verify(groupEventService).updateGroupStatus(
             argThat(request -> request.getNewStatus() == GroupStatus.AUTO_DISBANDED));
     }
 

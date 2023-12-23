@@ -18,7 +18,6 @@ import org.springframework.data.relational.core.mapping.Table;
  * @param websocketId The user's websocket ID for the request
  * @param username Member's username
  * @param groupId Group ID identifying the group the member belongs to
- * @param joinedDate Time user joined the group. Same time as createdDate
  * @param exitedDate Time user left the group. Initially null.
  * @param createdDate Time group was created
  * @param lastModifiedDate Time group was last modified / updated
@@ -36,9 +35,6 @@ public record Member(
     String username,
     Long groupId,
     MemberStatus memberStatus,
-
-    @CreatedDate
-    Instant joinedDate,
 
     Instant exitedDate,
 
@@ -59,25 +55,74 @@ public record Member(
 ) {
     public static Member of(String username, Long groupId) {
         return new Member(null, UUID.randomUUID(), username, groupId, MemberStatus.ACTIVE, null,
-            null, null, null, null, null, 0);
+            null, null, null, null, 0);
     }
 
     public static Member of(UUID websocketId, String username, Long groupId) {
         return new Member(null, websocketId, username, groupId,
             MemberStatus.ACTIVE, null, null, null,
-            null, null, null, 0);
+            null, null, 0);
+    }
+
+    public static Member of(UUID websocketId, String username) {
+        return new Member(null, websocketId, username, null,
+            MemberStatus.ACTIVE, null, null, null,
+            null, null, 0);
     }
 
     public static Member of(String websocketId, String username, Long groupId) {
         return new Member(null, UUID.fromString(websocketId), username, groupId,
             MemberStatus.ACTIVE, null, null, null,
-            null, null, null, 0);
+            null, null, 0);
     }
 
     public static PublicMember toPublicMember(Member member) {
         return new PublicMember(
             member.id(), member.username(), member.groupId(),
-            member.memberStatus(), member.joinedDate(), member.exitedDate()
+            member.memberStatus(), member.createdDate(), member.exitedDate()
+        );
+    }
+
+    public Member withStatus(MemberStatus memberStatus) {
+        return new Member(
+            this.id(),
+            this.websocketId(),
+            this.username(),
+            this.groupId(),
+            memberStatus,
+            this.exitedDate(),
+            this.createdDate(),
+            this.lastModifiedDate(),
+            this.createdBy(),
+            this.lastModifiedBy(),
+            this.version()
+        );
+    }
+
+    public Member withExitedDate(Instant exitedDate) {
+        return new Member(
+            this.id(),
+            this.websocketId(),
+            this.username(),
+            this.groupId(),
+            this.memberStatus(),
+            exitedDate,
+            this.createdDate(),
+            this.lastModifiedDate(),
+            this.createdBy(),
+            this.lastModifiedBy(),
+            this.version()
+        );
+    }
+
+    public static PublicMember convertMembersToPublicMembers(Member member) {
+        return new PublicMember(
+            member.id(),
+            member.username(),
+            member.groupId(),
+            member.memberStatus(),
+            member.createdDate(),
+            member.exitedDate()
         );
     }
 }

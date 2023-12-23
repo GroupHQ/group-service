@@ -25,7 +25,6 @@
     <rule ref="category/java/design.xml/DataClass" />
     <rule ref="category/java/design.xml/DoNotExtendJavaLangError" />
     <rule ref="category/java/design.xml/ExceptionAsFlowControl" />
-    <rule ref="category/java/design.xml/ExcessiveParameterList" />
     <rule ref="category/java/design.xml/ExcessivePublicCount" />
     <rule ref="category/java/design.xml/FinalFieldCouldBeStatic" />
     <rule ref="category/java/design.xml/GodClass" />
@@ -49,7 +48,6 @@
         </properties>
     </rule>
     <rule ref="category/java/design.xml/UselessOverridingMethod" />
-    <rule ref="category/java/design.xml/UseObjectForClearerAPI" />
 
 <!--  Though this rule aims to help follow the Law of Demeter, it is "prone to many false-positives
       and low-priority warnings". We recommend to disable the rule since it could cause more harm than good,
@@ -75,4 +73,7 @@
 <!-- Tests require this limit to be arbitrarily high, rendering this rule useless.  -->
 <!--    <rule ref="category/java/design.xml/ExcessiveImports" />-->
 
+<!-- Doesn't play well when using records with 'with...' methods -->
+<!--    <rule ref="category/java/design.xml/ExcessiveParameterList" />-->
+<!--    <rule ref="category/java/design.xml/UseObjectForClearerAPI" />-->
 </ruleset>

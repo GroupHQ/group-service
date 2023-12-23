@@ -41,7 +41,6 @@ public final class GroupTestUtility {
         final Faker faker = new Faker();
 
         // Generate capacities and ensure space for at least 50 members to join
-        final int currentCapacity = faker.number().numberBetween(1, 50);
         final int maxCapacity = faker.number().numberBetween(100, 150);
 
         return new Group(
@@ -49,14 +48,14 @@ public final class GroupTestUtility {
             faker.lorem().sentence(),
             faker.lorem().sentence(20),
             maxCapacity,
-            currentCapacity,
             status,
-            Instant.now(),
+            null,
             Instant.now(),
             Instant.now(),
             OWNER,
             OWNER,
-            0
+            0,
+            null
         );
     }
 
@@ -70,8 +69,6 @@ public final class GroupTestUtility {
      */
     public static Group generateFullGroupDetails(Long groupId, GroupStatus status) {
 
-        // Generate capacities and ensure space for at least 50 members to join
-        final int currentCapacity = FAKER.number().numberBetween(1, 50);
         final int maxCapacity = FAKER.number().numberBetween(100, 150);
 
         return new Group(
@@ -79,14 +76,14 @@ public final class GroupTestUtility {
             FAKER.lorem().sentence(),
             FAKER.lorem().sentence(20),
             maxCapacity,
-            currentCapacity,
             status,
-            Instant.now(),
+            null,
             Instant.now(),
             Instant.now(),
             OWNER,
             OWNER,
-            0
+            0,
+            null
         );
     }
 
@@ -94,14 +91,12 @@ public final class GroupTestUtility {
      * Overloaded method for {@link #generateFullGroupDetails(GroupStatus status)}.
      *
      * @param maxGroupSize maximum number of users that can belong to the group.
-     * @param currentGroupSize current number of users that are part of the group.
      * @param status the status of the group.
      *
      * @return a group object with all details.
      */
     public static Group generateFullGroupDetails(
         int maxGroupSize,
-        int currentGroupSize,
         GroupStatus status) {
 
         return new Group(
@@ -109,14 +104,14 @@ public final class GroupTestUtility {
             FAKER.lorem().sentence(),
             FAKER.lorem().sentence(20),
             maxGroupSize,
-            currentGroupSize,
             status,
-            Instant.now(),
+            null,
             Instant.now(),
             Instant.now(),
             OWNER,
             OWNER,
-            0
+            0,
+            null
         );
     }
 
@@ -136,7 +131,6 @@ public final class GroupTestUtility {
             FAKER.name().firstName(),
             FAKER.number().randomNumber(12, true),
             MemberStatus.ACTIVE,
-            Instant.now(),
             null,
             Instant.now(),
             Instant.now(),
@@ -165,7 +159,6 @@ public final class GroupTestUtility {
             username,
             groupId,
             MemberStatus.ACTIVE,
-            Instant.now(),
             null,
             Instant.now(),
             Instant.now(),
@@ -300,8 +293,6 @@ public final class GroupTestUtility {
      */
     public static GroupCreateRequestEvent generateGroupCreateRequestEvent() {
 
-        // Generate capacities and ensure space for at least 50 members to join
-        final int currentCapacity = FAKER.number().numberBetween(1, 50);
         final int maxCapacity = FAKER.number().numberBetween(100, 150);
 
         return new GroupCreateRequestEvent(
@@ -309,7 +300,6 @@ public final class GroupTestUtility {
             FAKER.lorem().sentence(),
             FAKER.lorem().sentence(20),
             maxCapacity,
-            currentCapacity,
             OWNER,
             UUID.randomUUID().toString(),
             Instant.now()
@@ -320,19 +310,17 @@ public final class GroupTestUtility {
      * Overloaded method for {@link #generateGroupCreateRequestEvent()}.
      *
      * @param maxCapacity the maximum number of members that can join the group.
-     * @param currentCapacity the current number of members that are part of the group.
      *
      * @return a GroupCreateRequestEvent object with all details.
      */
     public static GroupCreateRequestEvent generateGroupCreateRequestEvent(
-        int maxCapacity, int currentCapacity) {
+        int maxCapacity) {
 
         return new GroupCreateRequestEvent(
             UUID.randomUUID(),
             FAKER.lorem().sentence(),
             FAKER.lorem().sentence(20),
             maxCapacity,
-            currentCapacity,
             OWNER,
             UUID.randomUUID().toString(),
             Instant.now()

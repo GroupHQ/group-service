@@ -7,8 +7,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.grouphq.groupservice.group.domain.groups.GroupService;
-import org.grouphq.groupservice.group.domain.members.MemberService;
+import org.grouphq.groupservice.group.domain.groups.GroupEventService;
+import org.grouphq.groupservice.group.domain.members.MemberEventService;
 import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
@@ -29,9 +29,9 @@ import reactor.core.publisher.Mono;
 @Configuration
 public class GroupEventHandler {
 
-    private final GroupService groupService;
+    private final GroupEventService groupEventService;
 
-    private final MemberService memberService;
+    private final MemberEventService memberEventService;
 
     private final Validator validator;
 
@@ -59,11 +59,11 @@ public class GroupEventHandler {
             .flatMap(groupJoinRequestEvent -> {
                 log.info("Group join request received: {}", groupJoinRequestEvent);
                 return validateRequest(groupJoinRequestEvent)
-                    .then(memberService.joinGroup(groupJoinRequestEvent))
+                    .then(memberEventService.joinGroup(groupJoinRequestEvent))
                     .doOnError(throwable ->
                         log.info("Cannot join group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
-                        memberService.joinGroupFailed(groupJoinRequestEvent, throwable))
+                        memberEventService.joinGroupFailed(groupJoinRequestEvent, throwable))
                     .doOnError(throwable -> log.error(
                         "Error processing group join failure: {}", throwable.getMessage()))
                     .onErrorResume(throwable -> Mono.empty());
@@ -83,11 +83,11 @@ public class GroupEventHandler {
             .flatMap(groupLeaveRequestEvent -> {
                 log.info("Group leave request received: {}", groupLeaveRequestEvent);
                 return validateRequest(groupLeaveRequestEvent)
-                    .then(memberService.removeMember(groupLeaveRequestEvent))
+                    .then(memberEventService.removeMember(groupLeaveRequestEvent))
                     .doOnError(throwable ->
                         log.info("Cannot leave group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
-                        memberService.removeMemberFailed(groupLeaveRequestEvent, throwable))
+                        memberEventService.removeMemberFailed(groupLeaveRequestEvent, throwable))
                     .doOnError(throwable -> log.error(
                         "Error processing group leave failure: {}", throwable.getMessage()))
                     .onErrorResume(throwable -> Mono.empty());
@@ -108,11 +108,11 @@ public class GroupEventHandler {
                 log.info("Group create request received: {}", groupCreateRequestEvent);
 
                 return validateRequest(groupCreateRequestEvent)
-                    .then(groupService.createGroup(groupCreateRequestEvent))
+                    .then(groupEventService.createGroup(groupCreateRequestEvent))
                     .doOnError(throwable ->
                         log.info("Cannot create group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
-                        groupService.createGroupFailed(groupCreateRequestEvent, throwable))
+                        groupEventService.createGroupFailed(groupCreateRequestEvent, throwable))
                     .doOnError(throwable -> log.error(
                         "Error processing group creation failure: {}", throwable.getMessage()))
                     .onErrorResume(throwable -> Mono.empty());
@@ -133,11 +133,11 @@ public class GroupEventHandler {
                 log.info("Group status request received: {}", groupStatusRequestEvent);
 
                 return validateRequest(groupStatusRequestEvent)
-                    .then(groupService.updateGroupStatus(groupStatusRequestEvent))
+                    .then(groupEventService.updateGroupStatus(groupStatusRequestEvent))
                     .doOnError(throwable ->
                         log.info("Cannot update group status: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
-                        groupService.updateGroupStatusFailed(groupStatusRequestEvent, throwable))
+                        groupEventService.updateGroupStatusFailed(groupStatusRequestEvent, throwable))
                     .doOnError(throwable -> log.error(
                         "Error processing group status update failure: {}", throwable.getMessage()))
                     .onErrorResume(throwable -> Mono.empty());
