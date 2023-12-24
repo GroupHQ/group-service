@@ -49,7 +49,7 @@ class GroupControllerTest {
             GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE)
         };
 
-        given(groupService.getAllActiveGroups()).willReturn(Flux.just(testGroups));
+        given(groupService.findActiveGroupsWithMembers()).willReturn(Flux.just(testGroups));
 
         webTestClient
             .get()
@@ -63,7 +63,7 @@ class GroupControllerTest {
                     "All groups received should be active");
             });
 
-        verify(groupService).getAllActiveGroups();
+        verify(groupService).findActiveGroupsWithMembers();
     }
 
     @Test
@@ -80,11 +80,11 @@ class GroupControllerTest {
 
         final List<PublicMember> publicMembers = List.of(
             new PublicMember(members[0].id(), members[0].username(), members[0].groupId(),
-                members[0].memberStatus(), members[0].joinedDate(), members[0].exitedDate()),
+                members[0].memberStatus(), members[0].createdDate(), members[0].exitedDate()),
             new PublicMember(members[1].id(), members[1].username(), members[1].groupId(),
-                members[1].memberStatus(), members[1].joinedDate(), members[1].exitedDate()),
+                members[1].memberStatus(), members[1].createdDate(), members[1].exitedDate()),
             new PublicMember(members[2].id(), members[2].username(), members[2].groupId(),
-                members[2].memberStatus(), members[2].joinedDate(), members[2].exitedDate())
+                members[2].memberStatus(), members[2].createdDate(), members[2].exitedDate())
         );
 
         webTestClient
@@ -102,7 +102,7 @@ class GroupControllerTest {
     @Test
     @DisplayName("Handle InternalServerError and send back corresponding response")
     void receiveInternalServerErrorWhenForUnrecognizedException() {
-        given(groupService.getAllActiveGroups()).willReturn(Flux.error(new InternalServerError()));
+        given(groupService.findActiveGroupsWithMembers()).willReturn(Flux.error(new InternalServerError()));
 
         webTestClient
             .get()
@@ -110,12 +110,8 @@ class GroupControllerTest {
             .exchange()
             .expectStatus().isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
             .expectBody(String.class).value(message ->
-                assertThat(message).isEqualTo(
-                    """
-                    The server has encountered an unexpected error.
-                    Rest assured, this will be investigated.
-                    """));
+                assertThat(message).isEqualTo("Sorry, something went wrong!"));
 
-        verify(groupService).getAllActiveGroups();
+        verify(groupService).findActiveGroupsWithMembers();
     }
 }

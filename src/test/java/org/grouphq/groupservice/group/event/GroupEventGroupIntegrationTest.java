@@ -9,8 +9,8 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.grouphq.groupservice.group.domain.groups.Group;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
+import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
 import org.grouphq.groupservice.group.domain.outbox.ErrorData;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
@@ -121,9 +121,9 @@ class GroupEventGroupIntegrationTest {
     @Test
     @DisplayName("Unsuccessfully fulfills a group create request")
     void createsGroupFailure() throws IOException {
-        // Create request with invalid capacities (max exceeding current)
+        // Create request with invalid capacity of 1
         final GroupCreateRequestEvent requestEvent =
-            GroupTestUtility.generateGroupCreateRequestEvent(5, 10);
+            GroupTestUtility.generateGroupCreateRequestEvent(1);
 
         inputDestination.send(new GenericMessage<>(requestEvent), createHandlerDestination);
         final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
@@ -141,8 +141,8 @@ class GroupEventGroupIntegrationTest {
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
         );
 
-        assertThat(errorData.error()).isEqualTo("Cannot create group because this group's "
-                                                + "proposed size exceeds its maximum size.");
+        assertThat(errorData.error()).isEqualTo("Cannot create group due to invalid max size value. "
+            + "Max size should be at least 2");
     }
 
     @Test
@@ -199,14 +199,14 @@ class GroupEventGroupIntegrationTest {
         );
 
         assertThat(errorData.error())
-            .isEqualTo("Cannot update group status because this group does not exist.");
+            .matches("Cannot fetch group with id: \\d+ because this group does not exist.");
     }
 
     @Test
     @DisplayName("Check validations for group create request")
     void checkValidationsForGroupCreateRequest() throws IOException {
         final GroupCreateRequestEvent requestEvent =
-            GroupTestUtility.generateGroupCreateRequestEvent(0, 0);
+            GroupTestUtility.generateGroupCreateRequestEvent(0);
 
         inputDestination.send(new GenericMessage<>(requestEvent), createHandlerDestination);
         final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);

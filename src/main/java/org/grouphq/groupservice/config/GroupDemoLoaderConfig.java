@@ -2,6 +2,7 @@ package org.grouphq.groupservice.config;
 
 import lombok.RequiredArgsConstructor;
 import org.grouphq.groupservice.group.demo.GroupDemoLoader;
+import org.grouphq.groupservice.group.domain.groups.GroupEventService;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -18,9 +19,11 @@ public class GroupDemoLoaderConfig {
 
     private final GroupService groupService;
 
+    private final GroupEventService groupEventService;
+
     @Bean
     @ConditionalOnProperty(name = "group.loader.enabled", havingValue = "true")
     public GroupDemoLoader groupDemoLoader() {
-        return new GroupDemoLoader(groupService);
+        return new GroupDemoLoader(groupService, groupEventService);
     }
 }

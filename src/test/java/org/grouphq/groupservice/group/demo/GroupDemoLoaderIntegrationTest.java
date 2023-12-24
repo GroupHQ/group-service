@@ -8,9 +8,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import org.grouphq.groupservice.group.domain.groups.Group;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
+import org.grouphq.groupservice.group.domain.groups.GroupEventService;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
+import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +51,9 @@ class GroupDemoLoaderIntegrationTest {
     @Autowired
     private GroupService groupService;
 
+    @Autowired
+    private GroupEventService groupEventService;
+
     @DynamicPropertySource
     static void postgresqlProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.r2dbc.url", GroupDemoLoaderIntegrationTest::r2dbcUrl);
@@ -66,7 +70,7 @@ class GroupDemoLoaderIntegrationTest {
 
     @BeforeEach
     void timesJobShouldHaveRun() {
-        this.groupDemoLoader = new GroupDemoLoader(groupService);
+        this.groupDemoLoader = new GroupDemoLoader(groupService, groupEventService);
         StepVerifier.create(groupRepository.deleteAll())
             .expectComplete()
             .verify(Duration.ofSeconds(1));
@@ -120,10 +124,9 @@ class GroupDemoLoaderIntegrationTest {
             final Group group = groupsSaved.get(i);
             groupsToExpire[i] = new Group(
                 group.id(), group.title(), group.description(),
-                group.maxGroupSize(), group.currentGroupSize(), group.status(),
-                group.lastActive(), cutoffDate.minus(1, ChronoUnit.SECONDS),
-                group.lastModifiedDate(), group.createdBy(),
-                group.lastModifiedBy(), group.version()
+                group.maxGroupSize(), group.status(), group.lastModifiedDate(),
+                cutoffDate.minus(1, ChronoUnit.SECONDS), group.lastModifiedDate(),
+                group.createdBy(), group.lastModifiedBy(), group.version(), List.of()
             );
         }
 

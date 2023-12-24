@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.groups.Group;
+import org.grouphq.groupservice.group.domain.groups.GroupEventService;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
@@ -38,6 +39,8 @@ public class GroupDemoLoader {
 
     private final GroupService groupService;
 
+    private final GroupEventService groupEventService;
+
     @Scheduled(initialDelayString = "${group.loader.initial-group-delay}",
         fixedDelayString = "${group.loader.periodic-group-addition-interval}",
         timeUnit = TimeUnit.SECONDS)
@@ -57,13 +60,13 @@ public class GroupDemoLoader {
             final Group group = groupService.generateGroup();
             createRequestEvents[i] = new GroupCreateRequestEvent(
                 UUID.randomUUID(), group.title(), group.description(),
-                group.maxGroupSize(), group.currentGroupSize(), "system", null,
+                group.maxGroupSize(), "system", null,
                 Instant.now());
         }
 
         return Flux.just(createRequestEvents)
             .delayElements(Duration.ofSeconds(1))
-            .flatMap(groupService::createGroup)
+            .flatMap(groupEventService::createGroup)
             .onErrorResume(throwable -> {
                 log.error("Error creating group", throwable);
                 // log to sentry
@@ -79,15 +82,15 @@ public class GroupDemoLoader {
     }
 
     public Flux<Void> expireGroups(Instant cutoffDate) {
-        return groupService.getActiveGroupsPastCutoffDate(cutoffDate)
+        return groupService.findActiveGroupsPastCutoffDate(cutoffDate)
             .flatMap(group -> {
                 final GroupStatusRequestEvent statusRequestEvent = new GroupStatusRequestEvent(
                     UUID.randomUUID(), group.id(), GroupStatus.AUTO_DISBANDED,
                     null, Instant.now());
 
-                return groupService.updateGroupStatus(statusRequestEvent)
+                return groupEventService.updateGroupStatus(statusRequestEvent)
                     .onErrorResume(throwable ->
-                        groupService.updateGroupStatusFailed(statusRequestEvent, throwable))
+                        groupEventService.updateGroupStatusFailed(statusRequestEvent, throwable))
                     .onErrorResume(throwable -> {
                         log.error("Error updating group status", throwable);
                         // log to sentry

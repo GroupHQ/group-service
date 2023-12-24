@@ -33,12 +33,8 @@ class GroupJsonTest {
             .isEqualTo(group.description());
         assertThat(jsonContent).extractingJsonPathNumberValue("@.maxGroupSize")
             .isEqualTo(group.maxGroupSize());
-        assertThat(jsonContent).extractingJsonPathNumberValue("@.currentGroupSize")
-            .isEqualTo(group.currentGroupSize());
         assertThat(jsonContent).extractingJsonPathStringValue("@.status")
             .isEqualTo(group.status().toString());
-        assertThat(jsonContent).extractingJsonPathStringValue("@.lastActive")
-            .isEqualTo(group.lastActive().toString());
         assertThat(jsonContent).extractingJsonPathStringValue("@.createdDate")
             .isEqualTo(group.createdDate().toString());
         assertThat(jsonContent).extractingJsonPathStringValue("@.lastModifiedDate")

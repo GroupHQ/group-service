@@ -32,8 +32,6 @@ class MemberJsonTest {
             .isEqualTo(member.groupId());
         assertThat(jsonContent).extractingJsonPathStringValue("@.memberStatus")
             .isEqualTo(member.memberStatus().toString());
-        assertThat(jsonContent).extractingJsonPathStringValue("@.joinedDate")
-            .isEqualTo(member.joinedDate().toString());
         assertThat(jsonContent).extractingJsonPathStringValue("@.exitedDate")
             .isNullOrEmpty();
         assertThat(jsonContent).extractingJsonPathStringValue("@.createdDate")

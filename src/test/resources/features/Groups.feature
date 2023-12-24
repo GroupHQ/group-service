@@ -15,7 +15,6 @@ Feature: Groups
     Given there is an active group
     When I try to join the group
     Then I should be a member of the group
-    And the group's current member size should increase by one
 
   Scenario: User joining group more than once
     Given there is an active group
@@ -33,7 +32,6 @@ Feature: Groups
     Given I am in an active group
     When I try to leave the group
     Then I should no longer be an active member of that group
-    And the group's current member size should decrease by one
 
   Scenario: User requesting another member to leave a group
     Given I know the ID of another member in an active group

@@ -2,128 +2,139 @@ package org.grouphq.groupservice.group.domain.groups;
 
 import com.github.javafaker.Faker;
 import java.time.Instant;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
 import org.grouphq.groupservice.group.domain.exceptions.GroupDoesNotExistException;
-import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
-import org.grouphq.groupservice.group.domain.outbox.OutboxService;
-import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
+import org.grouphq.groupservice.group.domain.exceptions.MemberNotFoundException;
+import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
+import org.grouphq.groupservice.group.domain.members.Member;
+import org.grouphq.groupservice.group.domain.members.MemberStatus;
+import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * A service for performing business logic related to groups.
+ * A service for performing business logic related to groups and their members.
  */
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class GroupService {
 
-    private final OutboxService outboxService;
-
     private final GroupRepository groupRepository;
 
+    private final MemberRepository memberRepository;
+
     private final ExceptionMapper exceptionMapper;
+    
+    private static final String CANNOT_FETCH_GROUP_MESSAGE = "Cannot fetch group with id: ";
 
-
-    public Mono<Group> findById(Long id) {
-        log.info("Getting group by id: {}", id);
-        return groupRepository.findById(id);
+    public Mono<Group> findGroupById(Long id) {
+        log.info("Getting group with id: {}", id);
+        return groupRepository.findById(id)
+            .switchIfEmpty(
+                Mono.error(new GroupDoesNotExistException(CANNOT_FETCH_GROUP_MESSAGE + id)));
     }
 
-    public Flux<Group> getAllActiveGroups() {
+    public Mono<Group> findGroupByIdWithActiveMembers(Long id) {
+        return groupRepository.findById(id)
+            .switchIfEmpty(
+                Mono.error(new GroupDoesNotExistException(CANNOT_FETCH_GROUP_MESSAGE + id)))
+            .flatMap(group -> memberRepository.getActiveMembersByGroup(group.id())
+                .map(Member::convertMembersToPublicMembers)
+                .collectList()
+                .map(group::withMembers))
+            .onErrorMap(exceptionMapper::getBusinessException);
+    }
+
+    public Mono<Group> findGroupByIdWithAllMembers(Long id) {
+        return groupRepository.findById(id)
+            .switchIfEmpty(
+                Mono.error(new GroupDoesNotExistException(CANNOT_FETCH_GROUP_MESSAGE + id)))
+            .flatMap(group -> memberRepository.getMembersByGroup(group.id())
+                .map(Member::convertMembersToPublicMembers)
+                .collectList()
+                .map(group::withMembers))
+            .onErrorMap(exceptionMapper::getBusinessException);
+    }
+
+    public Flux<Group> findActiveGroups() {
         log.info("Getting all groups by active status");
         return groupRepository.findGroupsByStatus(GroupStatus.ACTIVE);
     }
 
-    @Transactional
-    public Mono<Void> createGroup(GroupCreateRequestEvent event) {
-
-        log.info("Received create group request: {}", event);
-        return outboxService.errorIfEventPublished(event)
-            .flatMap(this::createGroupCreateEvent)
-            .flatMap(outboxService::saveOutboxEvent)
-            .doOnSuccess(emptySave ->
-                log.info("Fulfilled create request. Created group and outbox event: {}", event))
-            .log()
-            .onErrorMap(exceptionMapper::getBusinessException);
+    public Flux<Group> findActiveGroupsWithMembers() {
+        return groupRepository.findGroupsByStatus(GroupStatus.ACTIVE)
+            .flatMap(group ->
+                memberRepository.getActiveMembersByGroup(group.id())
+                    .map(Member::convertMembersToPublicMembers)
+                    .collectList()
+                    .map(group::withMembers));
     }
 
-    private Mono<OutboxEvent> createGroupCreateEvent(GroupCreateRequestEvent createRequestEvent) {
-        final Group group = Group.of(
-            createRequestEvent.getTitle(), createRequestEvent.getDescription(),
-            createRequestEvent.getMaxGroupSize(), createRequestEvent.getCurrentGroupSize(),
-            GroupStatus.ACTIVE);
-
-        return groupRepository.save(group)
-            .flatMap(savedGroup -> outboxService
-                .createGroupCreateSuccessfulEvent(createRequestEvent, savedGroup));
-    }
-
-    @Transactional
-    public Mono<Void> createGroupFailed(GroupCreateRequestEvent event,
-                                        Throwable throwable) {
-
-        log.info("Received create group request: {}", event);
-        return outboxService.errorIfEventPublished(event)
-            .flatMap(requestEvent -> outboxService.createGroupCreateFailedEvent(event, throwable))
-            .flatMap(outboxService::saveOutboxEvent)
-            .doOnSuccess(emptySave ->
-                log.info("Fulfilled create request. Saved outbox event: {}", event))
-            .log()
-            .onErrorMap(exceptionMapper::getBusinessException);
-    }
-
-    @Transactional
-    public Mono<Void> updateGroupStatus(GroupStatusRequestEvent event) {
-
-        log.info("Received update status request: {}", event);
-        return outboxService.errorIfEventPublished(event)
-            .flatMap(requestEvent -> groupRepository.findById(event.getAggregateId()))
-            .switchIfEmpty(Mono.error(new GroupDoesNotExistException("Cannot update group status")))
-            .flatMap(group -> updateStatus(group, event.getNewStatus()))
-            .flatMap(savedGroup -> outboxService.createGroupStatusSuccessfulEvent(event))
-            .flatMap(outboxService::saveOutboxEvent)
-            .doOnSuccess(emptySave ->
-                log.info("Fulfilled update status request. "
-                    + "Updated status and saved outbox event: {}", event))
-            .log()
-            .onErrorMap(exceptionMapper::getBusinessException);
-    }
-
-    private Mono<Group> updateStatus(Group group, GroupStatus newStatus) {
-        return groupRepository.updateStatus(group.id(), newStatus)
-            .thenReturn(group);
-    }
-
-    @Transactional
-    public Mono<Void> updateGroupStatusFailed(GroupStatusRequestEvent event,
-                                              Throwable throwable) {
-
-        log.info("Received update status request: {}", event);
-        return outboxService.errorIfEventPublished(event)
-            .flatMap(requestEvent -> outboxService.createGroupStatusFailedEvent(event, throwable))
-            .flatMap(outboxService::saveOutboxEvent)
-            .doOnSuccess(emptySave -> log.info("Fulfilled update status request: {}", event))
-            .log()
-            .onErrorMap(exceptionMapper::getBusinessException);
-    }
-
-    public Flux<Group> getActiveGroupsPastCutoffDate(Instant cutoffDate) {
+    public Flux<Group> findActiveGroupsPastCutoffDate(Instant cutoffDate) {
         return groupRepository.getActiveGroupsPastCutoffDate(cutoffDate, GroupStatus.ACTIVE);
+    }
+
+    public Mono<Group> createGroup(String title, String description, int maxGroupSize) {
+        final Group group = Group.of(title, description, maxGroupSize, GroupStatus.ACTIVE);
+        log.info("Creating group: {}", group);
+        return groupRepository.save(group);
+    }
+
+    public Mono<Group> updateStatus(Long groupId, GroupStatus status) {
+        log.info("Updating group status for group with id: {} to status: {}", groupId, status);
+        return groupRepository.findById(groupId)
+            .switchIfEmpty(
+                Mono.error(new GroupDoesNotExistException(CANNOT_FETCH_GROUP_MESSAGE + groupId)))
+            .then(groupRepository.updateStatusByGroupId(groupId, status))
+            .onErrorMap(exceptionMapper::getBusinessException);
+    }
+
+    public Mono<Group> disbandGroup(Long groupId) {
+        log.info("Disbanding group with id: {}", groupId);
+        return groupRepository.findById(groupId)
+            .switchIfEmpty(
+                Mono.error(new GroupDoesNotExistException(CANNOT_FETCH_GROUP_MESSAGE + groupId)))
+            .flatMap(group -> memberRepository.autoDisbandActiveMembers(groupId)
+                .then(groupRepository.updateStatusByGroupId(groupId, GroupStatus.DISBANDED)))
+            .onErrorMap(exceptionMapper::getBusinessException);
+    }
+
+    public Mono<Member> addMember(Long groupId, String username, String websocketId) {
+        log.info("Adding member to group with id: {}", groupId);
+        return groupRepository.findById(groupId)
+            .switchIfEmpty(Mono.error(new GroupDoesNotExistException(CANNOT_FETCH_GROUP_MESSAGE + groupId)))
+            .flatMap(group ->
+                memberRepository.save(Member.of(websocketId, username, groupId)))
+            .flatMap(member ->
+                groupRepository.updatedLastMemberActivityByGroupId(groupId, member.createdDate())
+                .thenReturn(member))
+            .onErrorMap(exceptionMapper::getBusinessException);
+    }
+
+    public Mono<Member> removeMember(Long groupId, Long memberId, String websocketId) {
+        final UUID websocketUuid = UUID.fromString(websocketId);
+        log.info("Removing member from group with member id: {}", memberId);
+        return memberRepository.findMemberByIdAndWebsocketId(memberId, websocketUuid)
+            .switchIfEmpty(Mono.error(new MemberNotFoundException("Cannot remove member")))
+            .flatMap(group ->
+                memberRepository.removeMemberFromGroup(memberId, websocketUuid, MemberStatus.LEFT))
+            .flatMap(member ->
+                groupRepository.updatedLastMemberActivityByGroupId(groupId, member.exitedDate())
+                    .thenReturn(member))
+            .onErrorMap(exceptionMapper::getBusinessException);
     }
 
     public Group generateGroup() {
         final Faker faker = new Faker();
-        
-        final int currentCapacity = 0;
+
         final int maxCapacity = faker.number().numberBetween(2, 64);
 
         return Group.of(faker.lorem().sentence(), faker.lorem().sentence(20),
-            maxCapacity, currentCapacity, GroupStatus.ACTIVE);
+            maxCapacity, GroupStatus.ACTIVE);
     }
 }

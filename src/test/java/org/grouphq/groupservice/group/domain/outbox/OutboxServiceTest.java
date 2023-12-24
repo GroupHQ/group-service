@@ -57,7 +57,7 @@ class OutboxServiceTest {
         objectMapper.registerModule(new JavaTimeModule());
 
         requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), "Title", "Description",
-            10, 1, "system", "websocketId", Instant.now());
+            10,  "system", "websocketId", Instant.now());
     }
 
     @Test
@@ -160,7 +160,7 @@ class OutboxServiceTest {
             .generateFullMemberDetails(requestEvent.getUsername(), requestEvent.getAggregateId());
 
         StepVerifier.create(outboxService.createGroupJoinSuccessfulEvent(requestEvent, member))
-            .consumeNextWith(event -> assertThat(event).satisfies(outboxEvent -> {
+            .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
                 assertThat(outboxEvent.getAggregateId())
@@ -186,7 +186,7 @@ class OutboxServiceTest {
         final Throwable failure = new Throwable("Failed to join group");
 
         StepVerifier.create(outboxService.createGroupJoinFailedEvent(requestEvent, failure))
-            .consumeNextWith(event -> assertThat(event).satisfies(outboxEvent -> {
+            .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
                 assertThat(outboxEvent.getAggregateId())
@@ -212,7 +212,7 @@ class OutboxServiceTest {
             GroupTestUtility.generateGroupLeaveRequestEvent();
 
         StepVerifier.create(outboxService.createGroupLeaveSuccessfulEvent(requestEvent))
-            .consumeNextWith(event -> assertThat(event).satisfies(outboxEvent -> {
+            .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
                 assertThat(outboxEvent.getAggregateId())
@@ -241,7 +241,7 @@ class OutboxServiceTest {
         final Throwable failure = new Throwable("Failed to leave group");
 
         StepVerifier.create(outboxService.createGroupLeaveFailedEvent(requestEvent, failure))
-            .consumeNextWith(event -> assertThat(event).satisfies(outboxEvent -> {
+            .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
                 assertThat(outboxEvent.getAggregateId())
@@ -268,7 +268,7 @@ class OutboxServiceTest {
             GroupTestUtility.generateGroupCreateRequestEvent();
 
         StepVerifier.create(outboxService.createGroupCreateSuccessfulEvent(requestEvent, group))
-            .consumeNextWith(event -> assertThat(event).satisfies(outboxEvent -> {
+            .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
                 assertThat(outboxEvent.getAggregateId())
@@ -295,7 +295,7 @@ class OutboxServiceTest {
         final Throwable failure = new Throwable("Failed to create group");
 
         StepVerifier.create(outboxService.createGroupCreateFailedEvent(requestEvent, failure))
-            .consumeNextWith(event -> assertThat(event).satisfies(outboxEvent -> {
+            .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
                 assertThat(outboxEvent.getAggregateId()).isNull();
@@ -320,7 +320,7 @@ class OutboxServiceTest {
             GroupTestUtility.generateGroupStatusRequestEvent(1L, GroupStatus.ACTIVE);
 
         StepVerifier.create(outboxService.createGroupStatusSuccessfulEvent(requestEvent))
-            .consumeNextWith(event -> assertThat(event).satisfies(outboxEvent -> {
+            .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
                 assertThat(outboxEvent.getAggregateId())
@@ -349,7 +349,7 @@ class OutboxServiceTest {
         final Throwable failure = new Throwable("Failed to update group status");
 
         StepVerifier.create(outboxService.createGroupStatusFailedEvent(requestEvent, failure))
-            .consumeNextWith(event -> assertThat(event).satisfies(outboxEvent -> {
+            .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
                 assertThat(outboxEvent.getAggregateId())

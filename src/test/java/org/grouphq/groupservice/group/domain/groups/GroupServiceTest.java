@@ -1,374 +1,344 @@
 package org.grouphq.groupservice.group.domain.groups;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.function.Supplier;
-import org.grouphq.groupservice.group.domain.exceptions.EventAlreadyPublishedException;
-import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
-import org.grouphq.groupservice.group.domain.exceptions.GroupDoesNotExistException;
+import java.util.UUID;
 import org.grouphq.groupservice.group.domain.exceptions.GroupNotActiveException;
-import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
-import org.grouphq.groupservice.group.domain.outbox.OutboxService;
-import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
-import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
-import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
-import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
-import org.grouphq.groupservice.group.event.daos.RequestEvent;
-import org.grouphq.groupservice.group.testutility.GroupTestUtility;
-import org.junit.jupiter.api.BeforeEach;
+import org.grouphq.groupservice.group.domain.exceptions.GroupSizeException;
+import org.grouphq.groupservice.group.domain.exceptions.MemberNotFoundException;
+import org.grouphq.groupservice.group.domain.exceptions.UserAlreadyInGroupException;
+import org.grouphq.groupservice.group.domain.members.MemberStatus;
+import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
+import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-@Tag("UnitTest")
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@Testcontainers
+@ActiveProfiles("test")
+@Tag("IntegrationTest")
 class GroupServiceTest {
-    @Mock
-    private OutboxService outboxService;
 
-    @Mock
-    private GroupRepository groupRepository;
+    @Container
+    private static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
+        new PostgreSQLContainer<>(DockerImageName.parse("postgres:14.4"));
 
-    @Mock
-    private ExceptionMapper exceptionMapper;
-
-    private ObjectMapper objectMapper;
-
-    @InjectMocks
+    @Autowired
     private GroupService groupService;
 
-    @BeforeEach
-    public void setUp() {
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
+    @Autowired
+    private MemberRepository memberRepository;
+    
+    private static final String USER = "User";
+    private static final String GROUP = "Group";
+    private static final String GROUP_DESCRIPTION = "Group Description";
+
+    @DynamicPropertySource
+    private static void postgresqlProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.r2dbc.url", GroupServiceTest::r2dbcUrl);
+        registry.add("spring.r2dbc.username", POSTGRESQL_CONTAINER::getUsername);
+        registry.add("spring.r2dbc.password", POSTGRESQL_CONTAINER::getPassword);
+        registry.add("spring.flyway.url", POSTGRESQL_CONTAINER::getJdbcUrl);
+    }
+
+    private static String r2dbcUrl() {
+        return String.format("r2dbc:postgresql://%s:%s/%s", POSTGRESQL_CONTAINER.getHost(),
+            POSTGRESQL_CONTAINER.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT),
+            POSTGRESQL_CONTAINER.getDatabaseName());
     }
 
     @Test
-    @DisplayName("Gets a group by id")
-    void getsGroupById() {
-        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
-        given(groupRepository.findById(group.id())).willReturn(Mono.just(group));
+    @DisplayName("Create a group")
+    void createsGroup() {
+        final String title = "Group 1";
+        final String description = "Group 1 Description";
+        final int maxGroupSize = 10;
 
-        StepVerifier.create(groupService.findById(group.id()))
-                .expectNext(group)
-                .expectComplete()
-                .verify(Duration.ofSeconds(1));
+        final Mono<Group> groupMono =
+            groupService.createGroup(title, description, maxGroupSize)
+                    .flatMap(group -> groupService.findGroupById(group.id()));
 
-        verify(groupRepository).findById(group.id());
+        StepVerifier.create(groupMono).assertNext(group -> {
+            assertThat(group.title()).isEqualTo(title);
+            assertThat(group.description()).isEqualTo(description);
+            assertThat(group.maxGroupSize()).isEqualTo(maxGroupSize);
+            assertThat(group.status()).isEqualTo(GroupStatus.ACTIVE);
+            assertThat(group.createdDate()).isBetween(Instant.now().minus(Duration.ofSeconds(5)), Instant.now());
+            assertThat(group.lastModifiedDate())
+                .isBetween(Instant.now().minus(Duration.ofSeconds(5)), Instant.now());
+            assertThat(group.createdBy()).isNotEmpty();
+            assertThat(group.lastModifiedBy()).isNotEmpty();
+            assertThat(group.lastModifiedBy()).isEqualTo(group.createdBy());
+            assertThat(group.version()).isOne();
+            assertThat(group.members()).isNull();
+        })
+            .verifyComplete();
     }
 
     @Test
-    @DisplayName("Gets (active) groups")
+    @DisplayName("Get all active groups from database")
     void retrievesOnlyActiveGroups() {
-        final Group[] testGroups = {
-            GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE),
-            GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE)
-        };
-
-        final Flux<Group> mockedGroups = Flux.just(testGroups);
-
-        given(groupRepository.findGroupsByStatus(GroupStatus.ACTIVE)).willReturn(mockedGroups);
-
-        final Flux<Group> retrievedGroups = groupService.getAllActiveGroups();
-
-        StepVerifier.create(retrievedGroups)
-            .expectNextMatches(group -> matchGroup(group, testGroups[0], 0))
-            .expectNextMatches(group -> matchGroup(group, testGroups[1], 1))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
+        StepVerifier.create(groupService.findActiveGroups().collectList())
+            .assertNext(groups -> assertThat(groups).allMatch(group -> group.status() == GroupStatus.ACTIVE))
+            .verifyComplete();
     }
 
     @Test
-    @DisplayName("Processes group create request successfully")
-    void processGroupCreateRequest() throws JsonProcessingException {
-        final GroupCreateRequestEvent event = GroupTestUtility.generateGroupCreateRequestEvent();
-        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
-        final OutboxEvent outboxEvent = OutboxEvent.of(
-            event.getEventId(), group.id(), AggregateType.GROUP,
-            EventType.GROUP_CREATED, objectMapper.writeValueAsString(group),
-            EventStatus.SUCCESSFUL, event.getWebsocketId()
-        );
-
-        given(outboxService.errorIfEventPublished(event))
-            .willReturn(Mono.just(event));
-
-        given(groupRepository.save(any(Group.class)))
-            .willReturn(Mono.just(group));
-
-        given(outboxService.createGroupCreateSuccessfulEvent(event, group))
-            .willReturn(Mono.just(outboxEvent));
-
-        given(outboxService.saveOutboxEvent(outboxEvent))
-            .willReturn(Mono.empty());
-
-        StepVerifier.create(groupService.createGroup(event))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).save(any(Group.class));
-        verify(outboxService).createGroupCreateSuccessfulEvent(event, group);
-        verify(exceptionMapper, never()).getBusinessException(any(Exception.class));
-        verify(outboxService).saveOutboxEvent(outboxEvent);
+    @DisplayName("Get all groups older than cutoff date")
+    void retrieveGroupsThatShouldExpire() {
+        final Instant testStartDate = Instant.now();
+        StepVerifier.create(groupService.findActiveGroupsPastCutoffDate(testStartDate).collectList())
+            .assertNext(groups -> assertThat(groups).allMatch(group -> group.createdDate().isBefore(testStartDate)))
+            .verifyComplete();
     }
 
     @Test
-    @DisplayName("Processes group create failure request successfully")
-    void processGroupCreateFailureRequest() throws JsonProcessingException {
-        final GroupCreateRequestEvent event = GroupTestUtility.generateGroupCreateRequestEvent();
-        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
-        final Throwable failure = new RuntimeException("Error");
-        final OutboxEvent outboxEvent = OutboxEvent.of(
-            event.getEventId(), group.id(), AggregateType.GROUP, EventType.GROUP_CREATED,
-            objectMapper.writeValueAsString(failure.getMessage()),
-            EventStatus.FAILED, event.getWebsocketId()
-        );
-
-        given(outboxService.errorIfEventPublished(event))
-            .willReturn(Mono.just(event));
-
-        given(outboxService.createGroupCreateFailedEvent(event, failure))
-            .willReturn(Mono.just(outboxEvent));
-
-        given(outboxService.saveOutboxEvent(outboxEvent))
-            .willReturn(Mono.empty());
-
-        StepVerifier.create(groupService.createGroupFailed(event, failure))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository, never()).save(any(Group.class));
-        verify(outboxService).createGroupCreateFailedEvent(event, failure);
-        verify(exceptionMapper, never()).getBusinessException(any(Exception.class));
-        verify(outboxService).saveOutboxEvent(outboxEvent);
+    @DisplayName("Updates group's last updated time when group is created or updates")
+    void updateGroupsLastActiveTime() {
+        StepVerifier.create(groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                .flatMap(savedGroup ->
+                    groupService.updateStatus(savedGroup.id(), GroupStatus.DISBANDED)
+                    .then(Mono.zip(
+                        Mono.just(savedGroup),
+                        groupService.findGroupById(savedGroup.id())
+                    ))
+            ))
+            .assertNext(tuple2 -> {
+                final Group savedGroup = tuple2.getT1();
+                final Group updatedGroup = tuple2.getT2();
+                assertThat(savedGroup.version()).isNotEqualTo(updatedGroup.version());
+                assertThat(updatedGroup.lastModifiedDate()).isAfter(savedGroup.lastModifiedDate());
+            })
+            .verifyComplete();
     }
 
     @Test
-    @DisplayName("Process group update status request successfully")
-    void processGroupUpdateStatusRequest() throws JsonProcessingException {
-        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
-        final GroupStatusRequestEvent event = GroupTestUtility
-            .generateGroupStatusRequestEvent(group.id(), GroupStatus.AUTO_DISBANDED);
-        final OutboxEvent outboxEvent = OutboxEvent.of(
-            event.getEventId(), group.id(), AggregateType.GROUP, EventType.GROUP_STATUS_UPDATED,
-            objectMapper.writeValueAsString(
-                Collections.singletonMap("status", event.getNewStatus())),
-            EventStatus.SUCCESSFUL, event.getWebsocketId());
-
-        given(outboxService.errorIfEventPublished(event))
-            .willReturn(Mono.just(event));
-
-        given(groupRepository.findById(event.getAggregateId()))
-            .willReturn(Mono.just(group));
-
-        given(groupRepository.updateStatus(event.getAggregateId(), event.getNewStatus()))
-            .willReturn(Mono.empty());
-
-        given(outboxService.createGroupStatusSuccessfulEvent(event))
-            .willReturn(Mono.just(outboxEvent));
-
-        given(outboxService.saveOutboxEvent(outboxEvent))
-            .willReturn(Mono.empty());
-
-        StepVerifier.create(groupService.updateGroupStatus(event))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(event.getAggregateId());
-        verify(groupRepository).updateStatus(event.getAggregateId(), event.getNewStatus());
-        verify(outboxService).createGroupStatusSuccessfulEvent(event);
-        verify(exceptionMapper, never()).getBusinessException(any(Exception.class));
-        verify(outboxService).saveOutboxEvent(outboxEvent);
+    @DisplayName("Updates status of a group")
+    void updateGroupStatus() {
+        StepVerifier.create(
+                groupService.findActiveGroups().take(1)
+                    .flatMap(group ->
+                        groupService.updateStatus(group.id(), GroupStatus.AUTO_DISBANDED)
+                            .then(groupService.findGroupById(group.id()))
+                    )
+            )
+            .assertNext(group -> assertThat(group.status()).isEqualTo(GroupStatus.AUTO_DISBANDED))
+            .verifyComplete();
     }
 
     @Test
-    @DisplayName("Throw error if group cannot be found")
-    void processNonexistentGroupUpdateStatusRequest() {
-        final GroupStatusRequestEvent event = GroupTestUtility
-            .generateGroupStatusRequestEvent(10_000L, GroupStatus.ACTIVE);
-
-        given(outboxService.errorIfEventPublished(event))
-            .willReturn(Mono.just(event));
-
-        given(groupRepository.findById(event.getAggregateId()))
-            .willReturn(Mono.empty());
-
-        given(exceptionMapper.getBusinessException(any(Exception.class)))
-            .willReturn(new GroupDoesNotExistException("Cannot update group status"));
-
-        StepVerifier.create(groupService.updateGroupStatus(event))
-            .expectErrorMatches(throwable -> throwable instanceof GroupDoesNotExistException
-                && "Cannot update group status because this group does not exist."
-                                                 .equals(throwable.getMessage()))
-            .verify(Duration.ofSeconds(1));
-
-        verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(event.getAggregateId());
-        verify(groupRepository, never()).updateStatus(event.getAggregateId(), event.getNewStatus());
-        verify(outboxService, never()).createGroupStatusSuccessfulEvent(event);
-        verify(exceptionMapper).getBusinessException(any(Exception.class));
-        verify(outboxService, never()).saveOutboxEvent(any(OutboxEvent.class));
+    @DisplayName("Fetch active members from a group")
+    void fetchActiveMembersFromGroup() {
+        StepVerifier.create(
+            groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                .flatMap(group ->
+                    Flux.range(1, 5)
+                        .concatMap(i ->
+                            groupService.addMember(group.id(), "user" + i, UUID.randomUUID().toString()))
+                        .then(Mono.just(group))
+                )
+                .flatMap(group -> groupService.findGroupByIdWithActiveMembers(group.id()))
+        )
+        .assertNext(group -> {
+            assertThat(group.members()).hasSize(5);
+            assertThat(group.members()).allMatch(member -> member.memberStatus() == MemberStatus.ACTIVE);
+        })
+        .verifyComplete();
     }
 
     @Test
-    @DisplayName("Throw error if group status update from an in-active state")
-    void processInvalidGroupUpdateStatusRequest() {
-        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.AUTO_DISBANDED);
-        final GroupStatusRequestEvent event = GroupTestUtility
-            .generateGroupStatusRequestEvent(group.id(), GroupStatus.ACTIVE);
-
-        given(outboxService.errorIfEventPublished(event))
-            .willReturn(Mono.just(event));
-
-        given(groupRepository.findById(event.getAggregateId()))
-            .willReturn(Mono.just(group));
-
-        given(groupRepository.updateStatus(group.id(), event.getNewStatus()))
-            .willReturn(Mono.error(new RuntimeException()));
-
-        given(exceptionMapper.getBusinessException(any(Exception.class)))
-            .willReturn(new GroupNotActiveException("Cannot update group status"));
-
-        StepVerifier.create(groupService.updateGroupStatus(event))
-            .expectErrorMatches(throwable -> throwable instanceof GroupNotActiveException
-                && "Cannot update group status because this group is not active."
-                                                 .equals(throwable.getMessage()))
-            .verify(Duration.ofSeconds(1));
-
-        verify(outboxService).errorIfEventPublished(event);
-        verify(groupRepository).findById(event.getAggregateId());
-        verify(groupRepository).updateStatus(event.getAggregateId(), event.getNewStatus());
-        verify(outboxService, never()).createGroupStatusSuccessfulEvent(event);
-        verify(exceptionMapper).getBusinessException(any(Exception.class));
-        verify(outboxService, never()).saveOutboxEvent(any(OutboxEvent.class));
+    @DisplayName("Adds a member to a group")
+    void addMemberToGroup() {
+        StepVerifier.create(
+            groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                .flatMap(group ->
+                    groupService.addMember(group.id(), USER, UUID.randomUUID().toString()))
+                .flatMap(member ->
+                    groupService.findGroupByIdWithActiveMembers(member.groupId()))
+        )
+            .assertNext(group -> assertThat(group.members()).allMatch(member -> member.memberStatus() == MemberStatus.ACTIVE))
+            .verifyComplete();
     }
 
     @Test
-    @DisplayName("Process group update status failure request successfully")
-    void processGroupUpdateStatusRequestFailure() throws JsonProcessingException {
-        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
-        final GroupStatusRequestEvent event = GroupTestUtility
-            .generateGroupStatusRequestEvent(group.id(), GroupStatus.AUTO_DISBANDED);
-        final OutboxEvent outboxEvent = OutboxEvent.of(
-            event.getEventId(), group.id(), AggregateType.GROUP, EventType.GROUP_STATUS_UPDATED,
-            objectMapper.writeValueAsString(
-                Collections.singletonMap("status", event.getNewStatus())),
-            EventStatus.SUCCESSFUL, event.getWebsocketId());
-        final Throwable failure = new RuntimeException("Error");
-
-        given(outboxService.errorIfEventPublished(event))
-            .willReturn(Mono.just(event));
-
-        given(outboxService.createGroupStatusFailedEvent(event, failure))
-            .willReturn(Mono.just(outboxEvent));
-
-        given(outboxService.saveOutboxEvent(outboxEvent))
-            .willReturn(Mono.empty());
-
-        StepVerifier.create(groupService.updateGroupStatusFailed(event, failure))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        verify(outboxService).errorIfEventPublished(event);
-        verify(outboxService).createGroupStatusFailedEvent(event, failure);
-        verify(outboxService).saveOutboxEvent(outboxEvent);
-        verifyNoInteractions(groupRepository, exceptionMapper);
+    @DisplayName("Sets member status to ACTIVE when adding a member")
+    void setMemberStatusToActiveWhenAddingMember() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString()))
+                    .flatMap(member ->
+                        groupService.findGroupByIdWithActiveMembers(member.groupId()))
+            )
+            .assertNext(group -> {
+                assertThat(group.members()).hasSize(1);
+                assertThat(group.members()).allMatch(member -> member.memberStatus() == MemberStatus.ACTIVE);
+            })
+            .verifyComplete();
     }
 
     @Test
-    @DisplayName("Process group cutoff request")
-    void expireGroups() {
-        final Instant now = Instant.now();
-        given(groupRepository.getActiveGroupsPastCutoffDate(now, GroupStatus.ACTIVE))
-            .willReturn(Flux.empty());
-
-        StepVerifier.create(groupService.getActiveGroupsPastCutoffDate(now))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        verify(groupRepository)
-            .getActiveGroupsPastCutoffDate(now, GroupStatus.ACTIVE);
+    @DisplayName("Sets member joined date when adding a member")
+    void setMemberJoinedDateWhenAddingMember() {
+        final Instant testStartTime = Instant.now();
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString()))
+                    .flatMap(member ->
+                        groupService.findGroupByIdWithActiveMembers(member.groupId()))
+            )
+            .assertNext(group -> {
+                final PublicMember member = group.members().get(0);
+                assertThat(member).isNotNull();
+                assertThat(member.joinedDate()).isBetween(testStartTime, Instant.now());
+            })
+            .verifyComplete();
     }
 
     @Test
-    @DisplayName("Group create processor does not process the same event twice")
-    void doesNotProcessDuplicateCreateEvents() {
-        final GroupCreateRequestEvent event = GroupTestUtility.generateGroupCreateRequestEvent();
-
-        duplicateEventExists(() -> groupService.createGroup(event), event);
+    @DisplayName("Does not allow member additions to groups that are not active")
+    void doesNotAllowMemberAdditionsToNonActiveGroups() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.updateStatus(group.id(), GroupStatus.DISBANDED).thenReturn(group))
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString()))
+            )
+            .expectError(GroupNotActiveException.class)
+            .verify();
     }
 
     @Test
-    @DisplayName("Group create failure processor does not process the same event twice")
-    void doesNotProcessDuplicateCreateEventsFailure() {
-        final GroupCreateRequestEvent event = GroupTestUtility.generateGroupCreateRequestEvent();
-
-        duplicateEventExists(
-            () -> groupService.createGroupFailed(event, new Throwable()), event);
+    @DisplayName("Does not add a member to a group if the group is full")
+    void doesNotAddMemberToFullGroup() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 2)
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString())
+                            .then(groupService.addMember(group.id(), "user2", UUID.randomUUID().toString()))
+                            .then(groupService.addMember(group.id(), "user3", UUID.randomUUID().toString()))
+                            .thenReturn(group))
+                    .flatMap(group -> groupService.findGroupByIdWithActiveMembers(group.id()))
+            )
+            .expectError(GroupSizeException.class)
+            .verify();
     }
 
     @Test
-    @DisplayName("Group status update processor does not process the same event twice")
-    void doesNotProcessDuplicateStatusUpdateEvents() {
-        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
-        final GroupStatusRequestEvent event = GroupTestUtility
-            .generateGroupStatusRequestEvent(group.id(), GroupStatus.AUTO_DISBANDED);
-
-        duplicateEventExists(() -> groupService.updateGroupStatus(event), event);
+    @DisplayName("Remove a member from a group")
+    void removeMemberFromGroup() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString())
+                        .flatMap(member ->
+                            groupService.removeMember(member.groupId(), member.id(), member.websocketId().toString())
+                            .then(groupService.findGroupByIdWithActiveMembers(member.groupId()))
+                        )
+                    )
+            )
+            .assertNext(group -> assertThat(group.members()).hasSize(0))
+            .verifyComplete();
     }
 
     @Test
-    @DisplayName("Group status update failure processor does not process the same event twice")
-    void doesNotProcessDuplicateStatusUpdateEventsFailure() {
-        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
-        final GroupStatusRequestEvent event = GroupTestUtility
-            .generateGroupStatusRequestEvent(group.id(), GroupStatus.AUTO_DISBANDED);
-
-        duplicateEventExists(
-            () -> groupService.updateGroupStatusFailed(event, new Throwable()), event);
+    @DisplayName("Sets member status to LEFT when removing a member")
+    void setMemberStatusToLeftWhenRemovingMember() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString())
+                        .flatMap(member ->
+                            groupService.removeMember(member.groupId(), member.id(), member.websocketId().toString()))
+                    )
+            )
+            .assertNext(member -> assertThat(member.memberStatus()).isEqualTo(MemberStatus.LEFT))
+            .verifyComplete();
     }
 
-    private boolean matchGroup(Group actual, Group expected, int index) {
-        if (actual.equals(expected)) {
-            return true;
-        } else {
-            throw new AssertionError(
-                String.format(
-                    "Test group %d should equal returned group\nExpected: %s\nActual:   %s",
-                    index, expected, actual)
-            );
-        }
+    @Test
+    @DisplayName("Sets member exited date when removing a member")
+    void setMemberExitedDateWhenRemovingMember() {
+        final Instant testStartTime = Instant.now();
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString())
+                        .flatMap(member ->
+                            groupService.removeMember(member.groupId(), member.id(), member.websocketId().toString()))
+                    )
+            )
+            .assertNext(member -> assertThat(member.exitedDate()).isBetween(testStartTime, Instant.now()))
+            .verifyComplete();
     }
 
-    private void duplicateEventExists(Supplier<Mono<Void>> actionUnderTest, RequestEvent event) {
-        given(outboxService.errorIfEventPublished(event))
-            .willReturn(Mono.error(new EventAlreadyPublishedException("Cannot process event")));
+    @Test
+    @DisplayName("Automatically set all member statuses of a group to non-active when disbanding a group")
+    void automaticallySetMemberStatusToLeftWhenDisbandingGroup() {
+        final Instant testStartTime = Instant.now();
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        Flux.range(1, 5)
+                            .concatMap(i ->
+                                groupService.addMember(group.id(), "user" + i, UUID.randomUUID().toString()))
+                            .then(Mono.just(group))
+                    )
+                    .flatMap(group -> groupService.disbandGroup(group.id()))
+                    .flatMap(group -> memberRepository.getMembersByGroup(group.id()).collectList())
+            )
+            .assertNext(members -> {
+                assertThat(members).hasSize(5);
+                assertThat(members).allSatisfy(member -> {
+                    assertThat(member.version()).isEqualTo(2);
+                    assertThat(member.memberStatus()).isEqualTo(MemberStatus.AUTO_LEFT);
+                    assertThat(member.exitedDate()).isBetween(testStartTime, member.lastModifiedDate());
+                });
+            })
+            .verifyComplete();
+    }
 
-        StepVerifier.create(actionUnderTest.get())
-            .expectErrorMatches(Objects::nonNull)
-            .verify(Duration.ofSeconds(1));
+    @Test
+    @DisplayName("Does not allow a member to be added twice to a group")
+    void doesNotAllowMemberToBeAddedTwiceToGroup() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group -> groupService.addMember(group.id(), USER, UUID.randomUUID().toString())
+                        .flatMap(member ->
+                            groupService.addMember(
+                                member.groupId(), "user1Alt", member.websocketId().toString()))
+                    )
+            )
+            .expectError(UserAlreadyInGroupException.class)
+            .verify();
+    }
 
-        verify(outboxService).errorIfEventPublished(event);
+    @Test
+    @DisplayName("Fails gracefully when trying to remove a member that does not exist")
+    void failsGracefullyWhenRemovingMemberThatDoesNotExist() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.removeMember(group.id(), 1L, UUID.randomUUID().toString()))
+            )
+            .expectError(MemberNotFoundException.class)
+            .verify();
     }
 }

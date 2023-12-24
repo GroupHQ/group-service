@@ -8,11 +8,11 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import org.grouphq.groupservice.group.domain.groups.Group;
-import org.grouphq.groupservice.group.domain.groups.GroupRepository;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
+import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
 import org.grouphq.groupservice.group.domain.members.Member;
-import org.grouphq.groupservice.group.domain.members.MemberRepository;
 import org.grouphq.groupservice.group.domain.members.MemberStatus;
+import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
 import org.grouphq.groupservice.group.domain.outbox.ErrorData;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
@@ -108,7 +108,7 @@ class GroupEventMemberIntegrationTest {
     @DisplayName("Processes a group join request successfully")
     void successfullyJoinsGroup() throws IOException {
         saveGroup(Group.of("Group", "Description",
-            10, 5, GroupStatus.ACTIVE));
+            10, GroupStatus.ACTIVE));
 
         final GroupJoinRequestEvent requestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(group.id());
@@ -133,7 +133,7 @@ class GroupEventMemberIntegrationTest {
 
         // Verify this member was saved to the database
         StepVerifier.create(memberRepository.findById(member.id()))
-            .consumeNextWith(actual ->
+            .assertNext(actual ->
                 assertMemberEqualsExpectedProperties(
                     actual, requestEvent, MemberStatus.ACTIVE))
             .expectComplete().verify(Duration.ofSeconds(1));
@@ -143,7 +143,7 @@ class GroupEventMemberIntegrationTest {
     @DisplayName("Unsuccessfully joins group because its not active")
     void unsuccessfullyJoinsGroupBecauseItsNotActive() throws IOException {
         saveGroup(Group.of("Group", "Description",
-            10, 5, GroupStatus.AUTO_DISBANDED));
+            10, GroupStatus.AUTO_DISBANDED));
 
         final GroupJoinRequestEvent requestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(group.id());
@@ -198,14 +198,21 @@ class GroupEventMemberIntegrationTest {
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
-                .isEqualTo("Cannot save member because this group does not exist.")
+                .isEqualTo("Cannot fetch group with id: 10000 because this group does not exist.")
         );
     }
 
     @Test
     @DisplayName("Unsuccessfully joins group because its full")
     void unsuccessfullyJoinsGroupBecauseItsFull() throws IOException {
-        saveGroup(GroupTestUtility.generateFullGroupDetails(10, 10, GroupStatus.ACTIVE));
+        saveGroup(GroupTestUtility.generateFullGroupDetails(2, GroupStatus.ACTIVE));
+        inputDestination.send(
+            new GenericMessage<>(GroupTestUtility.generateGroupJoinRequestEvent(group.id())), joinHandlerDestination);
+        inputDestination.send(
+            new GenericMessage<>(GroupTestUtility.generateGroupJoinRequestEvent(group.id())), joinHandlerDestination);
+        outputDestination.receive(1000, eventPublisherDestination);
+        outputDestination.receive(1000, eventPublisherDestination);
+
 
         final GroupJoinRequestEvent requestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(group.id());
@@ -230,14 +237,14 @@ class GroupEventMemberIntegrationTest {
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
-                .isEqualTo("Cannot save member because this group is full.")
+                .isEqualTo("Cannot join group because this group has reached its maximum size")
         );
     }
 
     @Test
     @DisplayName("Successfully leaves group")
     void successfullyLeavesGroup() throws IOException {
-        saveGroup(Group.of("Group", "Description", 10, 5, GroupStatus.ACTIVE));
+        saveGroup(Group.of("Group", "Description", 10, GroupStatus.ACTIVE));
 
         final GroupJoinRequestEvent joinRequestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(group.id());
@@ -313,7 +320,8 @@ class GroupEventMemberIntegrationTest {
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
-                .isEqualTo("Cannot remove member because this group does not exist."));
+                .isEqualTo("Cannot remove member because either the member does not exist "
+                    + "or you do not have appropriate authorization."));
     }
 
     private void assertMemberEqualsExpectedProperties(
@@ -329,7 +337,7 @@ class GroupEventMemberIntegrationTest {
 
     private void saveGroup(Group group) {
         StepVerifier.create(groupRepository.save(group))
-            .consumeNextWith(savedGroup -> this.group = savedGroup)
+            .assertNext(savedGroup -> this.group = savedGroup)
             .expectComplete().verify(Duration.ofSeconds(1));
     }
 }

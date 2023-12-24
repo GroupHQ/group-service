@@ -8,9 +8,9 @@ import static org.mockito.Mockito.verify;
 
 import jakarta.validation.Validator;
 import java.util.Set;
-import org.grouphq.groupservice.group.domain.groups.GroupService;
+import org.grouphq.groupservice.group.domain.groups.GroupEventService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
-import org.grouphq.groupservice.group.domain.members.MemberService;
+import org.grouphq.groupservice.group.domain.members.MemberEventService;
 import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
@@ -31,10 +31,10 @@ import reactor.core.publisher.Mono;
 class GroupEventHandlerTest {
 
     @Mock
-    private GroupService groupService;
+    private GroupEventService groupEventService;
 
     @Mock
-    private MemberService memberService;
+    private MemberEventService memberEventService;
 
     @Mock
     private Validator validator;
@@ -52,14 +52,14 @@ class GroupEventHandlerTest {
         given(validator.validate(event))
             .willReturn(Set.of());
 
-        given(memberService.joinGroup(event))
+        given(memberEventService.joinGroup(event))
             .willReturn(Mono.empty());
 
         groupEventHandler.groupJoinRequests().accept(eventFlux);
 
         verify(validator).validate(event);
-        verify(memberService).joinGroup(event);
-        verify(memberService, never()).joinGroupFailed(eq(event), any());
+        verify(memberEventService).joinGroup(event);
+        verify(memberEventService, never()).joinGroupFailed(eq(event), any());
     }
 
     @Test
@@ -72,17 +72,17 @@ class GroupEventHandlerTest {
         given(validator.validate(event))
             .willReturn(Set.of());
 
-        given(memberService.joinGroup(event))
+        given(memberEventService.joinGroup(event))
             .willReturn(Mono.error(new RuntimeException()));
 
-        given(memberService.joinGroupFailed(eq(event), any(Throwable.class)))
+        given(memberEventService.joinGroupFailed(eq(event), any(Throwable.class)))
             .willReturn(Mono.empty());
 
         groupEventHandler.groupJoinRequests().accept(eventFlux);
 
         verify(validator).validate(event);
-        verify(memberService).joinGroup(event);
-        verify(memberService).joinGroupFailed(eq(event), any(Throwable.class));
+        verify(memberEventService).joinGroup(event);
+        verify(memberEventService).joinGroupFailed(eq(event), any(Throwable.class));
     }
 
     @Test
@@ -95,14 +95,14 @@ class GroupEventHandlerTest {
         given(validator.validate(event))
             .willReturn(Set.of());
 
-        given(memberService.removeMember(event))
+        given(memberEventService.removeMember(event))
             .willReturn(Mono.empty());
 
         groupEventHandler.groupLeaveRequests().accept(eventFlux);
 
         verify(validator).validate(event);
-        verify(memberService).removeMember(event);
-        verify(memberService, never()).removeMemberFailed(eq(event), any());
+        verify(memberEventService).removeMember(event);
+        verify(memberEventService, never()).removeMemberFailed(eq(event), any());
     }
 
     @Test
@@ -115,14 +115,14 @@ class GroupEventHandlerTest {
         given(validator.validate(event))
             .willReturn(Set.of());
 
-        given(memberService.removeMember(event))
+        given(memberEventService.removeMember(event))
             .willReturn(Mono.error(new RuntimeException()));
 
         groupEventHandler.groupLeaveRequests().accept(eventFlux);
 
         verify(validator).validate(event);
-        verify(memberService).removeMember(event);
-        verify(memberService).removeMemberFailed(eq(event), any(Throwable.class));
+        verify(memberEventService).removeMember(event);
+        verify(memberEventService).removeMemberFailed(eq(event), any(Throwable.class));
     }
 
     @Test
@@ -136,14 +136,14 @@ class GroupEventHandlerTest {
         given(validator.validate(event))
             .willReturn(Set.of());
 
-        given(groupService.createGroup(event))
+        given(groupEventService.createGroup(event))
             .willReturn(Mono.empty());
 
         groupEventHandler.groupCreateRequests().accept(eventFlux);
 
         verify(validator).validate(event);
-        verify(groupService).createGroup(event);
-        verify(groupService, never()).createGroupFailed(any(), any());
+        verify(groupEventService).createGroup(event);
+        verify(groupEventService, never()).createGroupFailed(any(), any());
     }
 
     @Test
@@ -154,13 +154,13 @@ class GroupEventHandlerTest {
 
         final Flux<GroupCreateRequestEvent> eventFlux = Flux.just(event);
 
-        given(groupService.createGroup(event))
+        given(groupEventService.createGroup(event))
             .willReturn(Mono.error(new RuntimeException()));
 
         groupEventHandler.groupCreateRequests().accept(eventFlux);
 
-        verify(groupService).createGroup(event);
-        verify(groupService).createGroupFailed(eq(event), any(Throwable.class));
+        verify(groupEventService).createGroup(event);
+        verify(groupEventService).createGroupFailed(eq(event), any(Throwable.class));
     }
 
     @Test
@@ -174,14 +174,14 @@ class GroupEventHandlerTest {
         given(validator.validate(event))
             .willReturn(Set.of());
 
-        given(groupService.updateGroupStatus(event))
+        given(groupEventService.updateGroupStatus(event))
             .willReturn(Mono.empty());
 
         groupEventHandler.groupStatusRequests().accept(eventFlux);
 
         verify(validator).validate(event);
-        verify(groupService).updateGroupStatus(event);
-        verify(groupService, never()).updateGroupStatusFailed(any(), any());
+        verify(groupEventService).updateGroupStatus(event);
+        verify(groupEventService, never()).updateGroupStatusFailed(any(), any());
     }
 
     @Test
@@ -195,14 +195,14 @@ class GroupEventHandlerTest {
         given(validator.validate(event))
             .willReturn(Set.of());
 
-        given(groupService.updateGroupStatus(event))
+        given(groupEventService.updateGroupStatus(event))
             .willReturn(Mono.error(new RuntimeException()));
 
         groupEventHandler.groupStatusRequests().accept(eventFlux);
 
         verify(validator).validate(event);
-        verify(groupService).updateGroupStatus(event);
-        verify(groupService).updateGroupStatusFailed(eq(event), any(Throwable.class));
+        verify(groupEventService).updateGroupStatus(event);
+        verify(groupEventService).updateGroupStatusFailed(eq(event), any(Throwable.class));
     }
 
 }

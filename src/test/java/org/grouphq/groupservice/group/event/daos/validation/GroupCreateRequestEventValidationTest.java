@@ -34,7 +34,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation succeeds when all fields valid")
     void whenAllFieldsCorrectThenValidationSucceeds() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, 10, 5, SYSTEM,
+            DESCRIPTION, 10, SYSTEM,
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -45,7 +45,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when eventId is null")
     void whenEventIdIsNullThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(null, TITLE,
-            DESCRIPTION, 10, 5, SYSTEM,
+            DESCRIPTION, 10, SYSTEM,
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -58,7 +58,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when createdDate is null")
     void whenCreatedDateIsNullThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, 10, 5, SYSTEM,
+            DESCRIPTION, 10, SYSTEM,
             null, null);
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -71,7 +71,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when created date is in the future")
     void whenCreatedDateIsInPastThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, 10, 5, SYSTEM,
+            DESCRIPTION, 10, SYSTEM,
             null, Instant.now().plusSeconds(5));
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -84,7 +84,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when title is null")
     void whenTitleIsNullThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), null,
-            DESCRIPTION, 10, 5, SYSTEM,
+            DESCRIPTION, 10, SYSTEM,
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -97,7 +97,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when title is blank")
     void whenTitleIsBlankThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), "",
-            DESCRIPTION, 10, 5, SYSTEM,
+            DESCRIPTION, 10, SYSTEM,
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -112,7 +112,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when title length is greater than maximum")
     void whenTitleIsGreaterThanMaxThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(),
-            "a".repeat(256), DESCRIPTION, 10, 5, SYSTEM,
+            "a".repeat(256), DESCRIPTION, 10, SYSTEM,
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -125,7 +125,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when title length is less than minimum")
     void whenTitleIsLessThanMinThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), "a",
-            DESCRIPTION, 10, 5, SYSTEM,
+            DESCRIPTION, 10, SYSTEM,
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -138,7 +138,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when description length is greater than maximum")
     void whenDescriptionIsGreaterThanMaxThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            "a".repeat(2049), 10, 5, SYSTEM,
+            "a".repeat(2049), 10, SYSTEM,
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -151,7 +151,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when maxGroupSize is negative")
     void whenMaxGroupSizeIsNegativeOrZeroThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, -1, 5, SYSTEM,
+            DESCRIPTION, -1, SYSTEM,
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -164,7 +164,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when maxGroupSize is zero")
     void whenMaxGroupSizeIsZeroThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, 0, 5, SYSTEM,
+            DESCRIPTION, 0, SYSTEM,
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -174,23 +174,10 @@ class GroupCreateRequestEventValidationTest {
     }
 
     @Test
-    @DisplayName("Validation fails when currentGroupSize is negative")
-    void whenCurrentGroupSizeIsNegativeThenValidationFails() {
-        final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, 10, -1, SYSTEM,
-            null, Instant.now());
-        final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
-            validator.validate(requestEvent);
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .isEqualTo("Current group size must be a positive value (or 0)");
-    }
-
-    @Test
     @DisplayName("Validation fails when createdBy is null")
     void whenCreatedByIsNullThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, 10, 5, null, null, Instant.now());
+            DESCRIPTION, 10, null, null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
         assertThat(violations).hasSize(1);
@@ -202,7 +189,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when createdBy is blank")
     void whenCreatedByIsBlankThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, 10, 5, "", null, Instant.now());
+            DESCRIPTION, 10, "", null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
         assertThat(violations).hasSize(2);
@@ -216,7 +203,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when createdBy length is greater than maximum")
     void whenCreatedByIsGreaterThanMaxThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, 10, 5, "a".repeat(65),
+            DESCRIPTION, 10, "a".repeat(65),
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
@@ -229,7 +216,7 @@ class GroupCreateRequestEventValidationTest {
     @DisplayName("Validation fails when createdBy length is less than minimum")
     void whenCreatedByIsLessThanMinThenValidationFails() {
         final var requestEvent = new GroupCreateRequestEvent(UUID.randomUUID(), TITLE,
-            DESCRIPTION, 10, 5, "a",
+            DESCRIPTION, 10, "a",
             null, Instant.now());
         final Set<ConstraintViolation<GroupCreateRequestEvent>> violations =
             validator.validate(requestEvent);
