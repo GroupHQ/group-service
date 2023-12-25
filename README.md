@@ -6,7 +6,7 @@ Group Service provides functionality for managing and joining groups.
   - [Component Diagram](#Component-Diagram)
 
 ## Group Service Architecture
-The following container diagram shows Group Services's place in the GroupHQ Software System. 
+The following container diagram shows Group Services' place in the GroupHQ Software System. 
 Shown in the diagram, Group Service communicates with three downstream services (Group Database, an Event Broker, and Config Service), while being called by an upstream service (Group Sync).
 <br>
 
