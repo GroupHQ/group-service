@@ -39,8 +39,8 @@ public class GroupDemoLoader {
 
     private final MemberEventService memberEventService;
 
-    @Scheduled(initialDelayString = "${group.loader.initial-delay}",
-        fixedDelayString = "${group.loader.fixed-delay}",
+    @Scheduled(initialDelayString = "${group.loader.group-service-jobs.load-groups.initial-delay}",
+        fixedDelayString = "${group.loader.group-service-jobs.load-groups.fixed-delay}",
         timeUnit = TimeUnit.SECONDS)
     private void loadGroupsJob() {
         final var loadGroupsJobProperties = groupProperties.getLoader().getGroupServiceJobs().getLoadGroups();
@@ -79,8 +79,8 @@ public class GroupDemoLoader {
         return createRequestEvents;
     }
 
-    @Scheduled(initialDelayString = "${group.expire-groups.initial-delay}",
-        fixedDelayString = "${group.expire-groups.fixed-delay}",
+    @Scheduled(initialDelayString = "${group.loader.group-service-jobs.expire-groups.initial-delay}",
+        fixedDelayString = "${group.loader.group-service-jobs.expire-groups.fixed-delay}",
         timeUnit = TimeUnit.SECONDS)
     private void expireGroupJob() {
         final var expireGroupJobProperties = groupProperties.getLoader().getGroupServiceJobs().getExpireGroups();
@@ -107,8 +107,8 @@ public class GroupDemoLoader {
             });
     }
 
-    @Scheduled(initialDelayString = "${group.loader.jobs.load-members.initial-delay}",
-        fixedDelayString = "${group.loader.jobs.load-members.fixed-delay}",
+    @Scheduled(initialDelayString = "${group.loader.group-service-jobs.load-members.initial-delay}",
+        fixedDelayString = "${group.loader.group-service-jobs.load-members.fixed-delay}",
         timeUnit = TimeUnit.SECONDS)
     private void loadMemberJob() {
         final var loadMembersJobProperties = groupProperties.getLoader().getGroupServiceJobs().getLoadMembers();
