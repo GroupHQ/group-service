@@ -10,17 +10,22 @@ server:
     connection-timeout: 2s
     idle-timeout: 15s
 group:
-  cutoff-checker:
-    time: 1800
-    initial-check-delay: 0
-    check-interval: 300
   loader:
     enabled: false
-    initial-group-delay: 0
-    initial-group-size: 3
-    periodic-group-addition-interval: 300
-    periodic-group-addition-count: 1
-
+    group-service-jobs:
+      load-groups:
+        initial-delay: 0
+        fixed-delay: 300
+        initial-group-count: 3
+        fixed-group-addition-count: 1
+      expire-groups:
+        initial-delay: 0
+        fixed-delay: 300
+        group-lifetime: 1800
+      load-members:
+        initial-delay: 5
+        fixed-delay: 60
+        member-join-max-delay: 120
 spring:
   application:
     name: group-service

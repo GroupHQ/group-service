@@ -158,7 +158,7 @@ class GroupServiceTest {
             assertThat(group.members()).hasSize(5);
             assertThat(group.members()).allMatch(member -> member.memberStatus() == MemberStatus.ACTIVE);
         })
-        .verifyComplete();
+            .verifyComplete();
     }
 
     @Test
@@ -171,7 +171,10 @@ class GroupServiceTest {
                 .flatMap(member ->
                     groupService.findGroupByIdWithActiveMembers(member.groupId()))
         )
-            .assertNext(group -> assertThat(group.members()).allMatch(member -> member.memberStatus() == MemberStatus.ACTIVE))
+        .assertNext(group ->
+            assertThat(
+                group.members()).allMatch(member -> member.memberStatus() == MemberStatus.ACTIVE)
+        )
             .verifyComplete();
     }
 

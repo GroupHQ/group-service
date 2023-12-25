@@ -7,18 +7,20 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import org.grouphq.groupservice.config.GroupProperties;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupEventService;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
+import org.grouphq.groupservice.group.domain.members.MemberEventService;
+import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -49,10 +51,19 @@ class GroupDemoLoaderIntegrationTest {
     private GroupRepository groupRepository;
 
     @Autowired
+    private MemberRepository memberRepository;
+
+    @Autowired
+    private GroupProperties groupProperties;
+
+    @Autowired
     private GroupService groupService;
 
     @Autowired
     private GroupEventService groupEventService;
+
+    @Autowired
+    private MemberEventService memberEventService;
 
     @DynamicPropertySource
     static void postgresqlProperties(DynamicPropertyRegistry registry) {
@@ -69,29 +80,27 @@ class GroupDemoLoaderIntegrationTest {
     }
 
     @BeforeEach
-    void timesJobShouldHaveRun() {
-        this.groupDemoLoader = new GroupDemoLoader(groupService, groupEventService);
-        StepVerifier.create(groupRepository.deleteAll())
+    void clearRepositories() {
+        this.groupDemoLoader =
+            new GroupDemoLoader(groupProperties, groupService, groupEventService, memberEventService);
+        StepVerifier.create(memberRepository.deleteAll().thenMany(groupRepository.deleteAll()))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
     }
 
     @Test
-    @DisplayName("Loads groups to database based on external properties")
-    void loadsGroups(
-        @Value("${group.loader.initial-group-size}")
-        int initialGroupSize,
-
-        @Value("${group.loader.periodic-group-addition-count}")
-        int periodicGroupAdditionCount
-    ) {
-        StepVerifier.create(
-            groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount))
-            .expectComplete()
-            .verify();
+    @DisplayName("Loads groups based on initial group size on first call")
+    void loadsGroups() {
+        final int initialGroupSize = 3;
+        final int periodicGroupAdditionCount = 2;
 
         StepVerifier.create(
-            groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount))
+            groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount)
+                .thenMany(groupService.findActiveGroups()))
+            .expectNextCount(initialGroupSize)
+            .verifyComplete();
+        StepVerifier.create(
+            groupDemoLoader.loadGroups(3, 2))
             .expectComplete()
             .verify();
 
@@ -102,9 +111,25 @@ class GroupDemoLoaderIntegrationTest {
     }
 
     @Test
+    @DisplayName("Loads groups on subsequent calls based on periodic group addition count")
+    void loadsGroupsOnSubsequentCalls() {
+        final int initialGroupSize = 3;
+        final int periodicGroupAdditionCount = 2;
+
+        StepVerifier.create(
+            groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount)
+                .thenMany(groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount)
+                .thenMany(groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount)))
+                .thenMany(groupService.findActiveGroups())
+            )
+            .expectNextCount(initialGroupSize + (periodicGroupAdditionCount * 2))
+            .verifyComplete();
+    }
+
+    @Test
     @DisplayName("Expires groups with time older than cutoff time")
-    void expiresGroups(@Value ("${group.cutoff-checker.time}") int cutoffTime) {
-        final Instant cutoffDate = Instant.now().minus(cutoffTime, ChronoUnit.SECONDS);
+    void expiresGroups() {
+        final Instant cutoffDate = Instant.now().minus(1, ChronoUnit.SECONDS);
         final Group[] testGroups = new Group[3];
 
         for (int i = 0; i < testGroups.length; i++) {
@@ -154,7 +179,7 @@ class GroupDemoLoaderIntegrationTest {
 
     @Test
     @DisplayName("Does not expire groups after cutoff time")
-    void expirationStatusJob(@Value ("${group.cutoff-checker.time}") int cutoffTime) {
+    void expirationStatusJob() {
         Group[] testGroups = new Group[3];
 
         for (int i = 0; i < testGroups.length; i++) {
@@ -166,7 +191,7 @@ class GroupDemoLoaderIntegrationTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        final Instant cutoffDate = Instant.now().minus(cutoffTime, ChronoUnit.SECONDS);
+        final Instant cutoffDate = Instant.now().minus(1, ChronoUnit.SECONDS);
         StepVerifier.create(groupDemoLoader.expireGroups(cutoffDate))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
@@ -182,5 +207,22 @@ class GroupDemoLoaderIntegrationTest {
         assertThat(groups)
             .filteredOn(group -> group.status().equals(GroupStatus.ACTIVE))
             .hasSize(groups.size());
+    }
+
+    @Test
+    @DisplayName("Load members into active groups")
+    void loadMembersIntoActiveGroups() {
+        final int initialGroupSize = 3;
+        final int periodicGroupAdditionCount = 2;
+        final int memberJoinMaxDelay = 0;
+
+        StepVerifier.create(
+            groupDemoLoader.loadGroups(initialGroupSize, periodicGroupAdditionCount)
+                .thenMany(groupDemoLoader.loadMembers(memberJoinMaxDelay))
+                .thenMany(groupDemoLoader.loadMembers(memberJoinMaxDelay))
+                .thenMany(groupService.findActiveGroupsWithMembers()).collectList())
+            .assertNext(groups ->
+                assertThat(groups).allSatisfy(group -> assertThat(group.members().size()).isEqualTo(2)))
+            .verifyComplete();
     }
 }
