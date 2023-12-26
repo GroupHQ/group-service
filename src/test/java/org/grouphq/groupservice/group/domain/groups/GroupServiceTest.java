@@ -85,7 +85,7 @@ class GroupServiceTest {
             assertThat(group.lastModifiedBy()).isNotEmpty();
             assertThat(group.lastModifiedBy()).isEqualTo(group.createdBy());
             assertThat(group.version()).isOne();
-            assertThat(group.members()).isNull();
+            assertThat(group.members()).isEmpty();
         })
             .verifyComplete();
     }
@@ -171,10 +171,8 @@ class GroupServiceTest {
                 .flatMap(member ->
                     groupService.findGroupByIdWithActiveMembers(member.groupId()))
         )
-        .assertNext(group ->
-            assertThat(
-                group.members()).allMatch(member -> member.memberStatus() == MemberStatus.ACTIVE)
-        )
+            .assertNext(group ->
+                assertThat(group.members()).allMatch(member -> member.memberStatus() == MemberStatus.ACTIVE))
             .verifyComplete();
     }
 

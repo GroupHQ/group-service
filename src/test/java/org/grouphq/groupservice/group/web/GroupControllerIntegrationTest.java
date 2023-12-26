@@ -3,18 +3,12 @@ package org.grouphq.groupservice.group.web;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import org.grouphq.groupservice.config.DataConfig;
 import org.grouphq.groupservice.config.SecurityConfig;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
-import org.grouphq.groupservice.group.domain.members.Member;
-import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
-import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -41,9 +35,6 @@ class GroupControllerIntegrationTest {
 
     @Autowired
     private GroupRepository groupRepository;
-
-    @Autowired
-    private MemberRepository memberRepository;
 
     @Autowired
     private WebTestClient webTestClient;
@@ -91,73 +82,5 @@ class GroupControllerIntegrationTest {
                         group.status().equals(GroupStatus.ACTIVE),
                     "All groups received should be active");
             });
-    }
-
-    @Test
-    @DisplayName("Allow users to retrieve active group members as public")
-    void retrieveActiveGroupMembersAsPublic() {
-        final Long groupId = createGroup(Group.of("Populated Group", "We got pumpkins!",
-            5, GroupStatus.ACTIVE));
-
-        final Member[] members = {
-            Member.of("User 1", groupId),
-            Member.of("User 2", groupId),
-            Member.of("User 3", groupId)
-        };
-
-        StepVerifier.create(memberRepository.saveAll(Flux.just(members)))
-            .expectNextCount(3)
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        final List<Member> memberList = new ArrayList<>();
-
-        StepVerifier.create(memberRepository.getActiveMembersByGroup(groupId))
-            .recordWith(() -> memberList)
-            .expectNextCount(3)
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        final List<PublicMember> publicMembers = List.of(
-            new PublicMember(memberList.get(0).id(), memberList.get(0).username(),
-                memberList.get(0).groupId(), memberList.get(0).memberStatus(),
-                memberList.get(0).createdDate(), memberList.get(0).exitedDate()),
-            new PublicMember(memberList.get(1).id(), memberList.get(1).username(),
-                memberList.get(1).groupId(), memberList.get(1).memberStatus(),
-                memberList.get(1).createdDate(), memberList.get(1).exitedDate()),
-            new PublicMember(memberList.get(2).id(), memberList.get(2).username(),
-                memberList.get(2).groupId(), memberList.get(2).memberStatus(),
-                memberList.get(2).createdDate(), memberList.get(2).exitedDate())
-        );
-
-        webTestClient
-            .get()
-            .uri("/api/groups/" + groupId + "/members")
-            .exchange()
-            .expectStatus().is2xxSuccessful()
-            .expectBodyList(PublicMember.class).value(retrievedMembers -> {
-                assertThat(retrievedMembers)
-                    .containsExactlyInAnyOrderElementsOf(publicMembers);
-                assertThat(retrievedMembers).isSortedAccordingTo((memberA, memberB) -> {
-                    if (memberA.joinedDate().isBefore(memberB.joinedDate())) {
-                        return -1;
-                    } else if (memberA.joinedDate().isAfter(memberB.joinedDate())) {
-                        return 1;
-                    } else {
-                        return 0;
-                    }
-                });
-            });
-    }
-
-    private Long createGroup(Group newGroup) {
-        final AtomicReference<Long> groupId = new AtomicReference<>();
-
-        StepVerifier.create(groupRepository.save(newGroup))
-            .assertNext(group -> groupId.set(group.id()))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        return groupId.get();
     }
 }

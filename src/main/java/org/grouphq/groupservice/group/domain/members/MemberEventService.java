@@ -5,8 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
-import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
+import org.grouphq.groupservice.group.event.daos.GroupUpdatedEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupLeaveRequestEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -35,6 +36,7 @@ public class MemberEventService {
                     event.getAggregateId(), event.getUsername(), event.getWebsocketId()))
             .flatMap(member -> outboxService.createGroupJoinSuccessfulEvent(event, member))
             .flatMap(outboxService::saveOutboxEvent)
+            .then(sendGroupUpdateEvent(event.getAggregateId()))
             .doOnSuccess(emptySave ->
                 log.info("Fulfilled join request. Saved new member and outbox event: {}", event))
             .log()
@@ -64,8 +66,9 @@ public class MemberEventService {
             .flatMap(requestEvent ->
                 groupService.removeMember(
                     event.getAggregateId(), event.getMemberId(), event.getWebsocketId()))
-            .then(Mono.defer(() -> outboxService.createGroupLeaveSuccessfulEvent(event)))
+            .then(outboxService.createGroupLeaveSuccessfulEvent(event))
             .flatMap(outboxService::saveOutboxEvent)
+            .then(sendGroupUpdateEvent(event.getAggregateId()))
             .doOnSuccess(emptySave ->
                 log.info("Fulfilled remove request. "
                     + "Removed member from group and saved outbox event: {}", event))
@@ -86,5 +89,13 @@ public class MemberEventService {
                 log.info("Fulfilled remove request. Saved outbox event: {}", event))
             .log()
             .onErrorMap(exceptionMapper::getBusinessException);
+    }
+
+    private Mono<Void> sendGroupUpdateEvent(Long groupId) {
+        return groupService.findGroupById(groupId)
+            .flatMap(group -> outboxService.createGroupUpdateSuccessfulEvent(
+                new GroupUpdatedEvent(groupId), group, null)
+            )
+            .flatMap(outboxService::saveOutboxEvent);
     }
 }

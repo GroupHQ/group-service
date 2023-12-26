@@ -1,6 +1,7 @@
 package org.grouphq.groupservice.group.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +9,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import org.grouphq.groupservice.group.domain.groups.Group;
+import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
 import org.grouphq.groupservice.group.domain.members.Member;
@@ -18,8 +20,8 @@ import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
-import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupLeaveRequestEvent;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -47,6 +49,9 @@ import reactor.test.StepVerifier;
 @Tag("IntegrationTest")
 class GroupEventMemberIntegrationTest {
 
+    private static final String GROUP = "Group";
+    private static final String DESCRIPTION = "Description";
+
     /**
      * Both InputDestination and OutputDestination are provided by the
      * TestChannelBinderConfiguration class, which is imported above.
@@ -59,6 +64,9 @@ class GroupEventMemberIntegrationTest {
 
     @Autowired
     private OutputDestination outputDestination;
+
+    @Autowired
+    private GroupService groupService;
 
     @Autowired
     private GroupRepository groupRepository;
@@ -104,19 +112,36 @@ class GroupEventMemberIntegrationTest {
         assertThat(eventPublisherDestination).isNotNull();
     }
 
+    private OutboxEvent receiveEvent(EventType eventTypeToReceive) throws IOException {
+        EventType eventType = null;
+        OutboxEvent outboxEvent = null;
+
+        while (eventType != eventTypeToReceive) {
+            final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
+
+            if (payload == null) {
+                fail("Timeout waiting for message at destination: " + eventPublisherDestination);
+            }
+
+            assert payload != null;
+            outboxEvent = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+            eventType = outboxEvent.getEventType();
+        }
+
+        return outboxEvent;
+    }
+
     @Test
     @DisplayName("Processes a group join request successfully")
     void successfullyJoinsGroup() throws IOException {
-        saveGroup(Group.of("Group", "Description",
+        saveGroup(Group.of(GROUP, DESCRIPTION,
             10, GroupStatus.ACTIVE));
 
         final GroupJoinRequestEvent requestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(group.id());
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
-
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -140,9 +165,35 @@ class GroupEventMemberIntegrationTest {
     }
 
     @Test
+    @DisplayName("Sends out a group updated event when a member joins a group")
+    void sendsOutGroupUpdatedEventWhenMemberJoinsGroup() throws IOException {
+        saveGroup(Group.of(GROUP, DESCRIPTION,
+            10, GroupStatus.ACTIVE));
+
+        final GroupJoinRequestEvent requestEvent =
+            GroupTestUtility.generateGroupJoinRequestEvent(group.id());
+        inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
+
+        final OutboxEvent groupUpdatedEvent = receiveEvent(EventType.GROUP_UPDATED);
+
+        assertThat(groupUpdatedEvent).satisfies(
+            actual -> assertThat(actual.getEventId()).isNotNull(),
+            actual -> assertThat(actual.getAggregateId()).isEqualTo(requestEvent.getAggregateId()),
+            actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
+            actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_UPDATED),
+            actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
+            actual -> assertThat(actual.getWebsocketId()).isEqualTo(null)
+        );
+
+        StepVerifier.create(groupService.findGroupById(group.id()))
+            .assertNext(actualGroup -> assertThat(actualGroup.lastModifiedDate()).isAfter(group.lastModifiedDate()))
+            .verifyComplete();
+    }
+
+    @Test
     @DisplayName("Unsuccessfully joins group because its not active")
     void unsuccessfullyJoinsGroupBecauseItsNotActive() throws IOException {
-        saveGroup(Group.of("Group", "Description",
+        saveGroup(Group.of(GROUP, DESCRIPTION,
             10, GroupStatus.AUTO_DISBANDED));
 
         final GroupJoinRequestEvent requestEvent =
@@ -150,9 +201,7 @@ class GroupEventMemberIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
-
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -180,9 +229,7 @@ class GroupEventMemberIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final Message<byte[]> payload = outputDestination.receive(1_000, eventPublisherDestination);
-
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -210,8 +257,8 @@ class GroupEventMemberIntegrationTest {
             new GenericMessage<>(GroupTestUtility.generateGroupJoinRequestEvent(group.id())), joinHandlerDestination);
         inputDestination.send(
             new GenericMessage<>(GroupTestUtility.generateGroupJoinRequestEvent(group.id())), joinHandlerDestination);
-        outputDestination.receive(1000, eventPublisherDestination);
-        outputDestination.receive(1000, eventPublisherDestination);
+        receiveEvent(EventType.MEMBER_JOINED);
+        receiveEvent(EventType.MEMBER_JOINED);
 
 
         final GroupJoinRequestEvent requestEvent =
@@ -219,9 +266,7 @@ class GroupEventMemberIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
-
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -244,15 +289,14 @@ class GroupEventMemberIntegrationTest {
     @Test
     @DisplayName("Successfully leaves group")
     void successfullyLeavesGroup() throws IOException {
-        saveGroup(Group.of("Group", "Description", 10, GroupStatus.ACTIVE));
+        saveGroup(Group.of(GROUP, DESCRIPTION, 10, GroupStatus.ACTIVE));
 
         final GroupJoinRequestEvent joinRequestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(group.id());
 
         inputDestination.send(new GenericMessage<>(joinRequestEvent), joinHandlerDestination);
-        Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
 
-        OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
         final Map<String, Object> memberData = objectMapper.readValue(event.getEventData(),
             new TypeReference<>() {});
         final Integer memberIdInt = (Integer) memberData.get("id");
@@ -263,9 +307,8 @@ class GroupEventMemberIntegrationTest {
                 joinRequestEvent.getWebsocketId(), group.id(), memberId);
 
         inputDestination.send(new GenericMessage<>(leaveRequestEvent), leaveHandlerDestination);
-        payload = outputDestination.receive(1000, eventPublisherDestination);
 
-        event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        event = receiveEvent(EventType.MEMBER_LEFT);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId())
@@ -282,11 +325,50 @@ class GroupEventMemberIntegrationTest {
                 .isEqualTo(leaveRequestEvent.getWebsocketId())
         );
 
-        // Verify member was removed from group
+        // Verify member was removed from the group
         StepVerifier.create(memberRepository.findById(memberId))
             .expectNextMatches(member -> member.memberStatus().equals(MemberStatus.LEFT))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
+    }
+
+    @Test
+    @DisplayName("Sends out a group updated event when a member leaves a group")
+    void sendsOutGroupUpdatedEventWhenMemberLeavesGroup() throws IOException {
+        saveGroup(Group.of(GROUP, DESCRIPTION, 10, GroupStatus.ACTIVE));
+
+        final GroupJoinRequestEvent joinRequestEvent =
+            GroupTestUtility.generateGroupJoinRequestEvent(group.id());
+
+        inputDestination.send(new GenericMessage<>(joinRequestEvent), joinHandlerDestination);
+
+        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
+        final Map<String, Object> memberData = objectMapper.readValue(event.getEventData(),
+            new TypeReference<>() {
+            });
+        final Integer memberIdInt = (Integer) memberData.get("id");
+        final Long memberId = memberIdInt.longValue();
+
+        final GroupLeaveRequestEvent leaveRequestEvent =
+            GroupTestUtility.generateGroupLeaveRequestEvent(
+                joinRequestEvent.getWebsocketId(), group.id(), memberId);
+
+        inputDestination.send(new GenericMessage<>(leaveRequestEvent), leaveHandlerDestination);
+
+        final OutboxEvent groupUpdatedEvent = receiveEvent(EventType.GROUP_UPDATED);
+
+        assertThat(groupUpdatedEvent).satisfies(
+            actual -> assertThat(actual.getEventId()).isNotNull(),
+            actual -> assertThat(actual.getAggregateId()).isEqualTo(leaveRequestEvent.getAggregateId()),
+            actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
+            actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_UPDATED),
+            actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
+            actual -> assertThat(actual.getWebsocketId()).isEqualTo(null)
+        );
+
+        StepVerifier.create(groupService.findGroupById(group.id()))
+            .assertNext(actualGroup -> assertThat(actualGroup.lastModifiedDate()).isAfter(group.lastModifiedDate()))
+            .verifyComplete();
     }
 
     @Test
@@ -296,9 +378,7 @@ class GroupEventMemberIntegrationTest {
             GroupTestUtility.generateGroupLeaveRequestEvent(10_000L, 10_000L);
 
         inputDestination.send(new GenericMessage<>(leaveRequestEvent), leaveHandlerDestination);
-        final Message<byte[]> payload = outputDestination.receive(1_000, eventPublisherDestination);
-
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.MEMBER_LEFT);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId())
@@ -321,7 +401,8 @@ class GroupEventMemberIntegrationTest {
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
                 .isEqualTo("Cannot remove member because either the member does not exist "
-                    + "or you do not have appropriate authorization."));
+                    + "or you do not have appropriate authorization. "
+                    + "Make sure you are using the correct member ID and websocket ID."));
     }
 
     private void assertMemberEqualsExpectedProperties(

@@ -74,7 +74,7 @@ public record Group(
                            int version) {
         return new Group(id, title, description, maxGroupSize, status, lastMemberActivity,
             createdDate, lastModifiedDate, createdBy, lastModifiedBy,
-            version, null);
+            version, List.of());
     }
 
 

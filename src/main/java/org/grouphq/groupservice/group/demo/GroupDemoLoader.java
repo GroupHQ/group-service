@@ -14,9 +14,9 @@ import org.grouphq.groupservice.group.domain.groups.GroupEventService;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.members.MemberEventService;
-import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupCreateRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequestEvent;
 import org.springframework.scheduling.annotation.Scheduled;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -123,7 +123,7 @@ public class GroupDemoLoader {
                     return createGroupJoinEvent(group.id())
                         .flatMap(groupJoinRequestEvent ->
                             randomDelay(memberJoinMaxDelay)
-                                .then(memberEventService.joinGroup(groupJoinRequestEvent))
+                                .then(joinGroup(group.id(), groupJoinRequestEvent))
                         );
                 } else {
                     return Mono.empty();
@@ -145,5 +145,16 @@ public class GroupDemoLoader {
         return Mono.delay(
             Duration.ofSeconds((long) (Math.random() * maxTimeSeconds) + 1)
         );
+    }
+
+    private Mono<Void> joinGroup(Long groupId, GroupJoinRequestEvent groupJoinRequestEvent) {
+        return groupService.findGroupByIdWithActiveMembers(groupId)
+            .flatMap(group -> {
+                if (group.status() == GroupStatus.ACTIVE && group.members().size() < group.maxGroupSize()) {
+                    return memberEventService.joinGroup(groupJoinRequestEvent);
+                } else {
+                    return Mono.empty();
+                }
+            });
     }
 }

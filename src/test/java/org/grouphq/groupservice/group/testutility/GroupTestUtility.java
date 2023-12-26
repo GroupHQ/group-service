@@ -11,10 +11,10 @@ import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
-import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupCreateRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupLeaveRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequestEvent;
 
 /**
  * Utility class for common functionality needed by multiple tests.
