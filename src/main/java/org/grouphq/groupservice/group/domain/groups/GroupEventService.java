@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
-import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupCreateRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequestEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -70,7 +70,7 @@ public class GroupEventService {
         return outboxService.errorIfEventPublished(event)
             .flatMap(group ->
                 groupService.updateStatus(event.getAggregateId(), event.getNewStatus()))
-            .then(Mono.defer(() -> outboxService.createGroupStatusSuccessfulEvent(event)))
+            .flatMap(group -> outboxService.createGroupUpdateSuccessfulEvent(event, group, event.getWebsocketId()))
             .flatMap(outboxService::saveOutboxEvent)
             .doOnSuccess(emptySave ->
                 log.info("Fulfilled update status request. "
@@ -85,7 +85,7 @@ public class GroupEventService {
 
         log.info("Received update status request: {}", event);
         return outboxService.errorIfEventPublished(event)
-            .flatMap(requestEvent -> outboxService.createGroupStatusFailedEvent(event, throwable))
+            .flatMap(requestEvent -> outboxService.createGroupUpdateFailedEvent(event, throwable))
             .flatMap(outboxService::saveOutboxEvent)
             .doOnSuccess(emptySave -> log.info("Fulfilled update status request: {}", event))
             .log()

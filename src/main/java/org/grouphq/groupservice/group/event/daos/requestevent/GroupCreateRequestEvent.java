@@ -1,4 +1,4 @@
-package org.grouphq.groupservice.group.event.daos;
+package org.grouphq.groupservice.group.event.daos.requestevent;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;

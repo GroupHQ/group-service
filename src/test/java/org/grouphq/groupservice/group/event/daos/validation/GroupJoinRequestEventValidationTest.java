@@ -9,7 +9,7 @@ import jakarta.validation.ValidatorFactory;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
-import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

@@ -2,12 +2,10 @@ package org.grouphq.groupservice.group.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Map;
+import java.time.Instant;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
@@ -16,8 +14,8 @@ import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
-import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupCreateRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequestEvent;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -166,21 +164,49 @@ class GroupEventGroupIntegrationTest {
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
             actual -> assertThat(actual.getAggregateId()).isEqualTo(requestEvent.getAggregateId()),
             actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
-            actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_STATUS_UPDATED),
-            actual -> assertThat(objectMapper.readValue(actual.getEventData(),
-                new TypeReference<Map<String, Object>>() {})).isNotNull()
-                .isEqualTo(Collections.singletonMap("status",
-                    GroupStatus.AUTO_DISBANDED.toString())),
+            actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_UPDATED),
+            actual -> assertThat(objectMapper.readValue(actual.getEventData(), Group.class).status())
+                .isEqualTo(GroupStatus.AUTO_DISBANDED),
             actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
         );
     }
 
     @Test
-    @DisplayName("Unsuccessfully fulfills a group status request")
-    void disbandsGroupFailure() throws IOException {
+    @DisplayName("Sends out a group updated event when status is updated")
+    void sendsOutGroupUpdatedEvent() throws IOException {
+        final Instant testStartTime = Instant.now();
+        final Group group = GroupTestUtility.generateFullGroupDetails(1001L, GroupStatus.ACTIVE);
+        StepVerifier.create(groupRepository.save(group))
+            .expectNextCount(1)
+            .expectComplete()
+            .verify(Duration.ofSeconds(1));
+
         final GroupStatusRequestEvent requestEvent =
             GroupTestUtility.generateGroupStatusRequestEvent(1001L, GroupStatus.AUTO_DISBANDED);
+
+        inputDestination.send(new GenericMessage<>(requestEvent), updateStatusHandlerDestination);
+        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
+
+        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+
+        assertThat(event).satisfies(
+            actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
+            actual -> assertThat(actual.getAggregateId()).isEqualTo(requestEvent.getAggregateId()),
+            actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
+            actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_UPDATED),
+            actual -> assertThat(objectMapper.readValue(actual.getEventData(), Group.class).lastModifiedDate())
+                .isBetween(testStartTime, Instant.now()),
+            actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
+            actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
+        );
+    }
+
+    @Test
+    @DisplayName("Unsuccessfully fulfills a group update request for a group that does not exist")
+    void disbandsGroupFailure() throws IOException {
+        final GroupStatusRequestEvent requestEvent =
+            GroupTestUtility.generateGroupStatusRequestEvent(999L, GroupStatus.AUTO_DISBANDED);
 
         inputDestination.send(new GenericMessage<>(requestEvent), updateStatusHandlerDestination);
         final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
@@ -193,7 +219,7 @@ class GroupEventGroupIntegrationTest {
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
             actual -> assertThat(actual.getAggregateId()).isEqualTo(requestEvent.getAggregateId()),
             actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
-            actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_STATUS_UPDATED),
+            actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_UPDATED),
             actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.FAILED),
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
         );

@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequestEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

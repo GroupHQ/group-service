@@ -10,11 +10,12 @@ import org.grouphq.groupservice.group.domain.members.Member;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
-import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
-import org.grouphq.groupservice.group.event.daos.RequestEvent;
+import org.grouphq.groupservice.group.event.daos.Event;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupCreateRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupLeaveRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.RequestEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -187,20 +188,19 @@ public class OutboxService {
                 log.error("Error while creating Group Create Update Failed Result: ", error));
     }
 
-    public Mono<OutboxEvent> createGroupStatusSuccessfulEvent(
-        GroupStatusRequestEvent statusRequest) {
+    public Mono<OutboxEvent> createGroupUpdateSuccessfulEvent(
+        Event event, Group group, String websocketId) {
 
         return Mono.fromCallable(() -> {
             log.debug("Creating Group Status Update Successful Result...");
             return OutboxEvent.of(
-                statusRequest.getEventId(),
-                statusRequest.getAggregateId(),
+                event.getEventId(),
+                event.getAggregateId(),
                 AggregateType.GROUP,
-                EventType.GROUP_STATUS_UPDATED,
-                objectMapper.writeValueAsString(
-                    Collections.singletonMap("status", statusRequest.getNewStatus())),
+                EventType.GROUP_UPDATED,
+                objectMapper.writeValueAsString(group),
                 EventStatus.SUCCESSFUL,
-                statusRequest.getWebsocketId()
+                websocketId
             );
         })
             .doOnNext(result ->
@@ -209,7 +209,7 @@ public class OutboxService {
                 log.error("Error while creating Group Status Update Successful Result: ", error));
     }
 
-    public Mono<OutboxEvent> createGroupStatusFailedEvent(
+    public Mono<OutboxEvent> createGroupUpdateFailedEvent(
         GroupStatusRequestEvent statusRequest,
         Throwable failure) {
 
@@ -219,7 +219,7 @@ public class OutboxService {
                 statusRequest.getEventId(),
                 statusRequest.getAggregateId(),
                 AggregateType.GROUP,
-                EventType.GROUP_STATUS_UPDATED,
+                EventType.GROUP_UPDATED,
                 objectMapper.writeValueAsString(new ErrorData(failure.getMessage())),
                 EventStatus.FAILED,
                 statusRequest.getWebsocketId()

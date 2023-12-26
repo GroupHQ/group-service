@@ -10,22 +10,21 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Data class for the request event.
- * <p>This class is abstract and should be extended by all request event classes.
- * This class contains the common fields for all request events.</p>
+ * Data class for event objects.
+ * <p>This class is abstract and should be extended by all event classes.
+ * This class contains the common fields for all events.
+ * For request events, see {@link org.grouphq.groupservice.group.event.daos.requestevent.RequestEvent}</p>
+ *
  */
 @AllArgsConstructor
 @NoArgsConstructor(force = true)
 @Data
-public abstract class RequestEvent {
-
+public abstract class Event {
     @NotNull(message = "Event ID must be provided")
     private final UUID eventId;
 
     @Positive(message = "Aggregate ID must be a positive value")
     private final Long aggregateId;
-
-    private final String websocketId;
 
     @NotNull(message = "Created date must be provided")
     @PastOrPresent(message = "Created date must be in the past or present")

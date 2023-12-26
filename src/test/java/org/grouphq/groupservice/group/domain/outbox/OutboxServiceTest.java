@@ -20,10 +20,10 @@ import org.grouphq.groupservice.group.domain.members.Member;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
-import org.grouphq.groupservice.group.event.daos.GroupCreateRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupStatusRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupCreateRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupLeaveRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequestEvent;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -318,8 +318,11 @@ class OutboxServiceTest {
     void verifyGroupStatusSuccessfulDataReturned() {
         final GroupStatusRequestEvent requestEvent =
             GroupTestUtility.generateGroupStatusRequestEvent(1L, GroupStatus.ACTIVE);
+        final Group group = GroupTestUtility.generateFullGroupDetails(1L, GroupStatus.ACTIVE);
 
-        StepVerifier.create(outboxService.createGroupStatusSuccessfulEvent(requestEvent))
+        StepVerifier.create(outboxService.createGroupUpdateSuccessfulEvent(
+            requestEvent, group, requestEvent.getWebsocketId())
+            )
             .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
@@ -328,11 +331,8 @@ class OutboxServiceTest {
                 assertThat(outboxEvent.getAggregateType())
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
-                    .isEqualTo(EventType.GROUP_STATUS_UPDATED);
-                assertThat(objectMapper.readValue(outboxEvent.getEventData(),
-                    new TypeReference<Map<String, Object>>() {})).isNotNull()
-                    .isEqualTo(Collections.singletonMap("status",
-                        requestEvent.getNewStatus().toString()));
+                    .isEqualTo(EventType.GROUP_UPDATED);
+                assertThat(objectMapper.readValue(outboxEvent.getEventData(), Group.class)).isEqualTo(group);
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.SUCCESSFUL);
                 assertThat(outboxEvent.getWebsocketId())
@@ -348,7 +348,7 @@ class OutboxServiceTest {
             GroupTestUtility.generateGroupStatusRequestEvent(1L, GroupStatus.ACTIVE);
         final Throwable failure = new Throwable("Failed to update group status");
 
-        StepVerifier.create(outboxService.createGroupStatusFailedEvent(requestEvent, failure))
+        StepVerifier.create(outboxService.createGroupUpdateFailedEvent(requestEvent, failure))
             .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
@@ -357,7 +357,7 @@ class OutboxServiceTest {
                 assertThat(outboxEvent.getAggregateType())
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
-                    .isEqualTo(EventType.GROUP_STATUS_UPDATED);
+                    .isEqualTo(EventType.GROUP_UPDATED);
                 assertThat(objectMapper.readValue(event.getEventData(), ErrorData.class))
                     .isEqualTo(new ErrorData(failure.getMessage()));
                 assertThat(outboxEvent.getEventStatus())

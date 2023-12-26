@@ -1,6 +1,7 @@
 package org.grouphq.groupservice.cucumber.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
@@ -24,9 +25,9 @@ import org.grouphq.groupservice.group.domain.members.repository.MemberRepository
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
-import org.grouphq.groupservice.group.event.daos.GroupJoinRequestEvent;
-import org.grouphq.groupservice.group.event.daos.GroupLeaveRequestEvent;
-import org.grouphq.groupservice.group.event.daos.RequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.GroupLeaveRequestEvent;
+import org.grouphq.groupservice.group.event.daos.requestevent.RequestEvent;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +49,6 @@ import reactor.test.StepVerifier;
 public class MemberPolicy {
     private static Member member;
     private static Group group;
-    private static OutboxEvent event;
 
     @Autowired
     private GroupRepository groupRepository;
@@ -101,19 +101,21 @@ public class MemberPolicy {
     }
 
     @When("I try to join the group")
-    public void iTryToJoinTheGroup() throws IOException {
+    public void iTryToJoinTheGroup() {
         final GroupJoinRequestEvent requestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(
                 userId, username, group.id());
 
-        loadEvent(requestEvent, joinHandlerDestination);
-        if (event.getEventStatus().equals(EventStatus.SUCCESSFUL)) {
-            member = objectMapper.readValue(event.getEventData(), Member.class);
-        }
+        sendEvent(requestEvent, joinHandlerDestination);
     }
 
     @Then("I should be a member of the group")
-    public void iShouldBeAMemberOfTheGroup() {
+    public void iShouldBeAMemberOfTheGroup() throws IOException {
+        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
+        if (event.getEventStatus().equals(EventStatus.SUCCESSFUL)) {
+            member = objectMapper.readValue(event.getEventData(), Member.class);
+        }
+
         assertThat(event).isNotNull();
         assertThat(event.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL);
         assertThat(event.getEventType()).isEqualTo(EventType.MEMBER_JOINED);
@@ -139,21 +141,23 @@ public class MemberPolicy {
         final GroupJoinRequestEvent requestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(userId, username, group.id());
 
-        loadEvent(requestEvent, joinHandlerDestination);
+        sendEvent(requestEvent, joinHandlerDestination);
+        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
         member = objectMapper.readValue(event.getEventData(), Member.class);
     }
 
     @When("I try to leave the group")
-    public void iTryToLeaveTheGroup() throws IOException {
+    public void iTryToLeaveTheGroup()  {
         final GroupLeaveRequestEvent requestEvent =
             GroupTestUtility.generateGroupLeaveRequestEvent(
                 member.websocketId().toString(), group.id(), member.id());
 
-        loadEvent(requestEvent, leaveHandlerDestination);
+        sendEvent(requestEvent, leaveHandlerDestination);
     }
 
     @Then("I should no longer be an active member of that group")
-    public void iShouldNoLongerBeAnActiveMemberOfThatGroup() {
+    public void iShouldNoLongerBeAnActiveMemberOfThatGroup() throws IOException {
+        receiveEvent(EventType.MEMBER_LEFT);
         StepVerifier.create(memberRepository.getActiveMembersByGroup(group.id()))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
@@ -272,16 +276,17 @@ public class MemberPolicy {
     }
 
     @When("I try to request that member leave the group")
-    public void iTryToRequestThatMemberLeaveTheGroup() throws IOException {
+    public void iTryToRequestThatMemberLeaveTheGroup() {
         final GroupLeaveRequestEvent requestEvent =
             GroupTestUtility.generateGroupLeaveRequestEvent(userId,
                 group.id(), member.id());
 
-        loadEvent(requestEvent, leaveHandlerDestination);
+        sendEvent(requestEvent, leaveHandlerDestination);
     }
 
     @Then("that member should still be in the group")
-    public void thatMemberShouldStillBeInTheGroup() {
+    public void thatMemberShouldStillBeInTheGroup() throws IOException {
+        final OutboxEvent event = receiveEvent(EventType.MEMBER_LEFT);
         assertThat(event).isNotNull();
         assertThat(event.getEventStatus()).isEqualTo(EventStatus.FAILED);
         assertThat(event.getEventType()).isEqualTo(EventType.MEMBER_LEFT);
@@ -298,17 +303,39 @@ public class MemberPolicy {
     }
 
     /**
-     * Sends an event and saves its response.
-     * Note that we clear the output destination to ensure we don't receive old messages.
+     * Sends an event.
      *
      * @param event RequestEvent to send
      * @param destination Destination to send event to
      * @param <T> Type of RequestEvent
      */
-    private <T extends RequestEvent> void loadEvent(T event, String destination) throws IOException {
+    private <T extends RequestEvent> void sendEvent(T event, String destination) {
         outputDestination.clear();
         inputDestination.send(new GenericMessage<>(event), destination);
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
-        MemberPolicy.event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+    }
+
+    /**
+     * Receives an event of the specified type.
+     * @param eventTypeToReceive EventType to receive
+     * @return OutboxEvent
+     * @throws IOException if there is an error deserializing the event
+     */
+    private OutboxEvent receiveEvent(EventType eventTypeToReceive) throws IOException {
+        EventType eventType = null;
+        OutboxEvent outboxEvent = null;
+
+        while (eventType != eventTypeToReceive) {
+            final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
+
+            if (payload == null) {
+                fail("Timeout waiting for message at destination: " + eventPublisherDestination);
+            }
+
+            assert payload != null;
+            outboxEvent = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+            eventType = outboxEvent.getEventType();
+        }
+
+        return outboxEvent;
     }
 }
