@@ -32,12 +32,6 @@ public class GroupEventPublisher {
                     log.error("Error publishing event: {}", outboxEvent, throwable);
                     return Mono.empty();
                 }))
-            .doOnError(throwable ->
-                log.error("""
-                    Error received out-of-stream for publisher supplier!
-                    Suspecting database connection error.
-                    Attempting to resume stream.""",
-                    throwable))
             .onErrorResume(throwable -> Mono.empty());
     }
 }

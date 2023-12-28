@@ -82,6 +82,8 @@ spring:
   integration:
     poller:
       fixed-delay: 50
+    error:
+      require-subscribers: false
   rabbitmq:
     host: {$SPRING_RABBITMQ_HOST:localhost}
     port: 5672
