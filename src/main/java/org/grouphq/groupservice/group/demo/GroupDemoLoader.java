@@ -86,17 +86,17 @@ public class GroupDemoLoader {
         final var expireGroupJobProperties = groupProperties.getLoader().getGroupServiceJobs().getExpireGroups();
         final Instant cutoffDate = Instant.now().minus(expireGroupJobProperties.getGroupLifetime(), ChronoUnit.SECONDS);
 
-        expireGroups(cutoffDate).subscribe();
+        expireGroupsCreatedBefore(cutoffDate).subscribe();
     }
 
-    public Flux<Void> expireGroups(Instant cutoffDate) {
-        return groupService.findActiveGroupsPastCutoffDate(cutoffDate)
+    public Flux<Void> expireGroupsCreatedBefore(Instant cutoffDate) {
+        return groupService.findActiveGroupsCreatedBefore(cutoffDate)
             .flatMap(group -> {
                 final GroupStatusRequestEvent statusRequestEvent = new GroupStatusRequestEvent(
                     UUID.randomUUID(), group.id(), GroupStatus.AUTO_DISBANDED,
                     null, Instant.now());
 
-                return groupEventService.updateGroupStatus(statusRequestEvent)
+                return groupEventService.autoDisbandGroup(statusRequestEvent)
                     .onErrorResume(throwable ->
                         groupEventService.updateGroupStatusFailed(statusRequestEvent, throwable))
                     .onErrorResume(throwable -> {

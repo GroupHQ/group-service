@@ -64,8 +64,34 @@ public class GroupEventService {
     }
 
     @Transactional
-    public Mono<Void> updateGroupStatus(GroupStatusRequestEvent event) {
+    public Mono<Void> autoDisbandGroup(GroupStatusRequestEvent event) {
+        if (event.getNewStatus() != GroupStatus.AUTO_DISBANDED) {
+            throw new IllegalArgumentException("New status must be DISBANDED");
+        }
 
+        log.info("Received auto-disband group request: {}", event);
+        return outboxService.errorIfEventPublished(event)
+            .flatMap(requestEvent ->
+                groupService.disbandGroup(event.getAggregateId(), GroupStatus.AUTO_DISBANDED))
+            .flatMap(group -> outboxService.createGroupUpdateSuccessfulEvent(event, group, event.getWebsocketId()))
+            .flatMap(outboxService::saveOutboxEvent)
+            .doOnSuccess(emptySave ->
+                log.info("Fulfilled auto-disband group request. "
+                    + "Updated status and saved outbox event: {}", event))
+            .log()
+            .onErrorMap(exceptionMapper::getBusinessException);
+    }
+
+    /**
+     * A method for updating a group's status.
+     *
+     * @param event The event containing the group ID and the new status
+     * @return A Mono that completes when the status has been updated
+     * @deprecated Recommended to use {@link #autoDisbandGroup(GroupStatusRequestEvent)} for disbanding groups
+     */
+    @Transactional
+    @Deprecated
+    public Mono<Void> updateGroupStatus(GroupStatusRequestEvent event) {
         log.info("Received update status request: {}", event);
         return outboxService.errorIfEventPublished(event)
             .flatMap(group ->

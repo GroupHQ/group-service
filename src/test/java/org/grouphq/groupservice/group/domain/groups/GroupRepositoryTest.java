@@ -81,7 +81,7 @@ class GroupRepositoryTest {
 
         StepVerifier.create(
             groupRepository
-                .getActiveGroupsPastCutoffDate(cutoffDate, GroupStatus.ACTIVE).collectList())
+                .findActiveGroupsCreatedBefore(cutoffDate, GroupStatus.ACTIVE).collectList())
             .assertNext(groups -> {
                 assertThat(groups).isNotEmpty();
                 assertThat(groups).allMatch(group -> group.createdDate().isBefore(cutoffDate));

@@ -1,14 +1,20 @@
 package org.grouphq.groupservice.group.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import org.grouphq.groupservice.group.domain.groups.Group;
+import org.grouphq.groupservice.group.domain.groups.GroupEventService;
+import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
-import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
+import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import org.grouphq.groupservice.group.domain.outbox.ErrorData;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
@@ -17,6 +23,7 @@ import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
 import org.grouphq.groupservice.group.event.daos.requestevent.GroupCreateRequestEvent;
 import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequestEvent;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -55,7 +62,10 @@ class GroupEventGroupIntegrationTest {
     private OutputDestination outputDestination;
 
     @Autowired
-    private GroupRepository groupRepository;
+    private GroupService groupService;
+
+    @Autowired
+    private GroupEventService groupEventService;
 
     @Value("${spring.cloud.stream.bindings.groupCreateRequests-in-0.destination}")
     private String createHandlerDestination;
@@ -87,16 +97,65 @@ class GroupEventGroupIntegrationTest {
             POSTGRESQL_CONTAINER.getDatabaseName());
     }
 
+    private OutboxEvent receiveEvent(EventType eventTypeToReceive) {
+        EventType eventType = null;
+        OutboxEvent outboxEvent = null;
+
+        while (eventType != eventTypeToReceive) {
+            final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
+
+            if (payload == null) {
+                fail("Timeout waiting for event type: " + eventTypeToReceive
+                    + " at destination: " + eventPublisherDestination);
+            }
+
+            assert payload != null;
+            try {
+                outboxEvent = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+            } catch (IOException e) {
+                fail("Failed to read payload as OutboxEvent: ", e);
+            }
+
+            assert outboxEvent != null;
+            eventType = outboxEvent.getEventType();
+        }
+
+        return outboxEvent;
+    }
+
+    private List<OutboxEvent> collectEvents() {
+        OutboxEvent event;
+        final List<OutboxEvent> events = new ArrayList<>();
+
+        Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
+
+        while (payload != null) {
+            try {
+                event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+                events.add(event);
+            } catch (IOException e) {
+                fail("Failed to read payload as OutboxEvent: ", e);
+            }
+
+            payload = outputDestination.receive(1000, eventPublisherDestination);
+        }
+
+        return events;
+    }
+
+    @BeforeEach
+    void clearEvents() {
+        outputDestination.clear();
+    }
+
     @Test
     @DisplayName("Successfully fulfills a group create request")
-    void createsGroup() throws IOException {
+    void createsGroup() {
         final GroupCreateRequestEvent requestEvent =
             GroupTestUtility.generateGroupCreateRequestEvent();
 
         inputDestination.send(new GenericMessage<>(requestEvent), createHandlerDestination);
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
-
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.GROUP_CREATED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -110,7 +169,7 @@ class GroupEventGroupIntegrationTest {
         );
 
         // Check that the group was saved to the database
-        StepVerifier.create(groupRepository.findById(event.getAggregateId()))
+        StepVerifier.create(groupService.findGroupById(event.getAggregateId()))
             .expectNextMatches(group -> group.status().equals(GroupStatus.ACTIVE))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
@@ -124,9 +183,8 @@ class GroupEventGroupIntegrationTest {
             GroupTestUtility.generateGroupCreateRequestEvent(1);
 
         inputDestination.send(new GenericMessage<>(requestEvent), createHandlerDestination);
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
 
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.GROUP_CREATED);
 
         final ErrorData errorData = objectMapper.readValue(event.getEventData(), ErrorData.class);
 
@@ -144,21 +202,16 @@ class GroupEventGroupIntegrationTest {
     }
 
     @Test
-    @DisplayName("Successfully fulfills a group status request")
-    void disbandsGroup() throws IOException {
-        final Group group = GroupTestUtility.generateFullGroupDetails(1000L, GroupStatus.ACTIVE);
-        StepVerifier.create(groupRepository.save(group))
-            .expectNextCount(1)
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
+    @DisplayName("Successfully disbands group")
+    void disbandsGroup() {
+        final Group group = groupService.createGroup("Title", "Description", 5).block();
 
+        assert group != null;
         final GroupStatusRequestEvent requestEvent =
-            GroupTestUtility.generateGroupStatusRequestEvent(1000L, GroupStatus.AUTO_DISBANDED);
+            GroupTestUtility.generateGroupStatusRequestEvent(group.id(), GroupStatus.AUTO_DISBANDED);
 
         inputDestination.send(new GenericMessage<>(requestEvent), updateStatusHandlerDestination);
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
-
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.GROUP_UPDATED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -173,22 +226,52 @@ class GroupEventGroupIntegrationTest {
     }
 
     @Test
-    @DisplayName("Sends out a group updated event when status is updated")
-    void sendsOutGroupUpdatedEvent() throws IOException {
-        final Instant testStartTime = Instant.now();
-        final Group group = GroupTestUtility.generateFullGroupDetails(1001L, GroupStatus.ACTIVE);
-        StepVerifier.create(groupRepository.save(group))
-            .expectNextCount(1)
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
+    @DisplayName("Sets member statuses to AUTO_LEFT when group disbanded event occurs")
+    void setsMemberStatusesToAutoLeft() {
+        StepVerifier.create(groupService.createGroup("Title", "Description", 5)
+            .flatMap(group ->
+                groupService.addMember(group.id(), "Username", UUID.randomUUID().toString())
+                    .then(
+                        groupService.addMember(group.id(), "Username2", UUID.randomUUID().toString())
+                    )
+                    .then(
+                        groupEventService.autoDisbandGroup(
+                            GroupTestUtility.generateGroupStatusRequestEvent(
+                                group.id(), GroupStatus.AUTO_DISBANDED
+                            )
+                        )
+                    )
+                    .then(groupService.findGroupByIdWithAllMembers(group.id()))
+            )
+        )
+            .assertNext(group -> assertThat(group.members())
+                .hasSize(2)
+                .allMatch(member -> member.memberStatus().equals(MemberStatus.AUTO_LEFT)))
+            .verifyComplete();
 
+        final List<OutboxEvent> events = collectEvents();
+
+        assertThat(events).hasSize(1);
+        assertThat(events).allSatisfy(event -> {
+            assertThat(event.getEventType()).isEqualTo(EventType.GROUP_UPDATED);
+            assertThat(event.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL);
+            assertThat(objectMapper.readValue(event.getEventData(), Group.class).status())
+                .isEqualTo(GroupStatus.AUTO_DISBANDED);
+        });
+    }
+
+    @Test
+    @DisplayName("Sends out a group updated event when status is updated")
+    void sendsOutGroupUpdatedEvent() {
+        final Instant testStartTime = Instant.now();
+        final Group group = groupService.createGroup("Title", "Description", 5).block();
+
+        assert group != null;
         final GroupStatusRequestEvent requestEvent =
-            GroupTestUtility.generateGroupStatusRequestEvent(1001L, GroupStatus.AUTO_DISBANDED);
+            GroupTestUtility.generateGroupStatusRequestEvent(group.id(), GroupStatus.AUTO_DISBANDED);
 
         inputDestination.send(new GenericMessage<>(requestEvent), updateStatusHandlerDestination);
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
-
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.GROUP_UPDATED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -209,9 +292,8 @@ class GroupEventGroupIntegrationTest {
             GroupTestUtility.generateGroupStatusRequestEvent(999L, GroupStatus.AUTO_DISBANDED);
 
         inputDestination.send(new GenericMessage<>(requestEvent), updateStatusHandlerDestination);
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
 
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.GROUP_UPDATED);
 
         final ErrorData errorData = objectMapper.readValue(event.getEventData(), ErrorData.class);
 
@@ -235,9 +317,8 @@ class GroupEventGroupIntegrationTest {
             GroupTestUtility.generateGroupCreateRequestEvent(0);
 
         inputDestination.send(new GenericMessage<>(requestEvent), createHandlerDestination);
-        final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
 
-        final OutboxEvent event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+        final OutboxEvent event = receiveEvent(EventType.GROUP_CREATED);
 
         final ErrorData errorData = objectMapper.readValue(event.getEventData(), ErrorData.class);
 

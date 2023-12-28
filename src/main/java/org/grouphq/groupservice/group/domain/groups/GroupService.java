@@ -75,8 +75,8 @@ public class GroupService {
                     .map(group::withMembers));
     }
 
-    public Flux<Group> findActiveGroupsPastCutoffDate(Instant cutoffDate) {
-        return groupRepository.getActiveGroupsPastCutoffDate(cutoffDate, GroupStatus.ACTIVE);
+    public Flux<Group> findActiveGroupsCreatedBefore(Instant cutoffDate) {
+        return groupRepository.findActiveGroupsCreatedBefore(cutoffDate, GroupStatus.ACTIVE);
     }
 
     public Mono<Group> createGroup(String title, String description, int maxGroupSize) {
@@ -90,17 +90,25 @@ public class GroupService {
         return groupRepository.findById(groupId)
             .switchIfEmpty(
                 Mono.error(new GroupDoesNotExistException(CANNOT_FETCH_GROUP_MESSAGE + groupId)))
-            .then(groupRepository.updateStatusByGroupId(groupId, status))
+            .then(
+                groupRepository.updateStatusByGroupId(groupId, status)
+                    .flatMap(group -> memberRepository.autoDisbandActiveMembers(groupId)
+                        .then(Mono.just(group)))
+            )
             .onErrorMap(exceptionMapper::getBusinessException);
     }
 
-    public Mono<Group> disbandGroup(Long groupId) {
+    public Mono<Group> disbandGroup(Long groupId, GroupStatus disbandmentStatus) {
+        if (disbandmentStatus != GroupStatus.DISBANDED && disbandmentStatus != GroupStatus.AUTO_DISBANDED) {
+            throw new IllegalArgumentException("New status must be DISBANDED or AUTO_DISBANDED");
+        }
+
         log.info("Disbanding group with id: {}", groupId);
         return groupRepository.findById(groupId)
             .switchIfEmpty(
                 Mono.error(new GroupDoesNotExistException(CANNOT_FETCH_GROUP_MESSAGE + groupId)))
-            .flatMap(group -> memberRepository.autoDisbandActiveMembers(groupId)
-                .then(groupRepository.updateStatusByGroupId(groupId, GroupStatus.DISBANDED)))
+            .flatMap(group -> memberRepository.autoDisbandActiveMembers(groupId).collectList())
+            .flatMap(members -> groupRepository.updateStatusByGroupId(groupId, disbandmentStatus))
             .onErrorMap(exceptionMapper::getBusinessException);
     }
 

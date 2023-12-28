@@ -66,7 +66,7 @@ public class MemberEventService {
             .flatMap(requestEvent ->
                 groupService.removeMember(
                     event.getAggregateId(), event.getMemberId(), event.getWebsocketId()))
-            .then(outboxService.createGroupLeaveSuccessfulEvent(event))
+            .flatMap(member -> outboxService.createGroupLeaveSuccessfulEvent(event, member))
             .flatMap(outboxService::saveOutboxEvent)
             .then(sendGroupUpdateEvent(event.getAggregateId()))
             .doOnSuccess(emptySave ->
