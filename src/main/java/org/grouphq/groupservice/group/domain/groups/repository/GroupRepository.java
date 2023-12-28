@@ -20,6 +20,6 @@ public interface GroupRepository
     @Query("SELECT * FROM groups")
     Flux<Group> getAllGroups();
 
-    @Query("SELECT * FROM groups WHERE status = :status AND groups.created_date < :cutoffDate")
-    Flux<Group> getActiveGroupsPastCutoffDate(Instant cutoffDate, GroupStatus status);
+    @Query("SELECT * FROM groups WHERE status = :status AND groups.created_date <= :cutoffDate")
+    Flux<Group> findActiveGroupsCreatedBefore(Instant cutoffDate, GroupStatus status);
 }

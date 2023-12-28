@@ -112,7 +112,7 @@ class GroupEventMemberIntegrationTest {
         assertThat(eventPublisherDestination).isNotNull();
     }
 
-    private OutboxEvent receiveEvent(EventType eventTypeToReceive) throws IOException {
+    private OutboxEvent receiveEvent(EventType eventTypeToReceive) {
         EventType eventType = null;
         OutboxEvent outboxEvent = null;
 
@@ -124,7 +124,13 @@ class GroupEventMemberIntegrationTest {
             }
 
             assert payload != null;
-            outboxEvent = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+            try {
+                outboxEvent = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+            } catch (IOException e) {
+                fail("Failed to read payload as OutboxEvent: ", e);
+            }
+
+            assert outboxEvent != null;
             eventType = outboxEvent.getEventType();
         }
 
@@ -166,7 +172,7 @@ class GroupEventMemberIntegrationTest {
 
     @Test
     @DisplayName("Sends out a group updated event when a member joins a group")
-    void sendsOutGroupUpdatedEventWhenMemberJoinsGroup() throws IOException {
+    void sendsOutGroupUpdatedEventWhenMemberJoinsGroup() {
         saveGroup(Group.of(GROUP, DESCRIPTION,
             10, GroupStatus.ACTIVE));
 

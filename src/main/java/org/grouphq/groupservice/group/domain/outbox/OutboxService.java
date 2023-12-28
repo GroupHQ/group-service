@@ -1,7 +1,6 @@
 package org.grouphq.groupservice.group.domain.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.exceptions.EventAlreadyPublishedException;
@@ -101,7 +100,9 @@ public class OutboxService {
             log.error("Error while creating Group Join Update Failed Result: ", error));
     }
 
-    public Mono<OutboxEvent> createGroupLeaveSuccessfulEvent(GroupLeaveRequestEvent leaveRequest) {
+    public Mono<OutboxEvent> createGroupLeaveSuccessfulEvent(
+        GroupLeaveRequestEvent leaveRequest,
+        Member member) {
 
         return Mono.fromCallable(() -> {
             log.debug("Creating Group Leave Update Successful Result...");
@@ -110,8 +111,7 @@ public class OutboxService {
                 leaveRequest.getAggregateId(),
                 AggregateType.GROUP,
                 EventType.MEMBER_LEFT,
-                objectMapper.writeValueAsString(
-                    Collections.singletonMap("memberId", leaveRequest.getMemberId())),
+                objectMapper.writeValueAsString(member),
                 EventStatus.SUCCESSFUL,
                 leaveRequest.getWebsocketId()
             );

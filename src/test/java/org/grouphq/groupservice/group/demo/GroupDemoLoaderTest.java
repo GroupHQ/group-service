@@ -68,18 +68,18 @@ class GroupDemoLoaderTest {
         final Instant cutoffTime = Instant.now().minus(1, ChronoUnit.HOURS);
         final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
 
-        given(groupService.findActiveGroupsPastCutoffDate(cutoffTime))
+        given(groupService.findActiveGroupsCreatedBefore(cutoffTime))
             .willReturn(Flux.just(group));
 
-        given(groupEventService.updateGroupStatus(any(GroupStatusRequestEvent.class)))
+        given(groupEventService.autoDisbandGroup(any(GroupStatusRequestEvent.class)))
             .willReturn(Mono.empty());
 
-        StepVerifier.create(groupDemoLoader.expireGroups(cutoffTime))
+        StepVerifier.create(groupDemoLoader.expireGroupsCreatedBefore(cutoffTime))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
-        verify(groupService).findActiveGroupsPastCutoffDate(cutoffTime);
-        verify(groupEventService).updateGroupStatus(
+        verify(groupService).findActiveGroupsCreatedBefore(cutoffTime);
+        verify(groupEventService).autoDisbandGroup(
             argThat(request -> request.getNewStatus() == GroupStatus.AUTO_DISBANDED));
     }
 

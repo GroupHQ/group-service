@@ -102,7 +102,7 @@ class GroupServiceTest {
     @DisplayName("Get all groups older than cutoff date")
     void retrieveGroupsThatShouldExpire() {
         final Instant testStartDate = Instant.now();
-        StepVerifier.create(groupService.findActiveGroupsPastCutoffDate(testStartDate).collectList())
+        StepVerifier.create(groupService.findActiveGroupsCreatedBefore(testStartDate).collectList())
             .assertNext(groups -> assertThat(groups).allMatch(group -> group.createdDate().isBefore(testStartDate)))
             .verifyComplete();
     }
@@ -302,7 +302,7 @@ class GroupServiceTest {
                                 groupService.addMember(group.id(), "user" + i, UUID.randomUUID().toString()))
                             .then(Mono.just(group))
                     )
-                    .flatMap(group -> groupService.disbandGroup(group.id()))
+                    .flatMap(group -> groupService.disbandGroup(group.id(), GroupStatus.DISBANDED))
                     .flatMap(group -> memberRepository.getMembersByGroup(group.id()).collectList())
             )
             .assertNext(members -> {

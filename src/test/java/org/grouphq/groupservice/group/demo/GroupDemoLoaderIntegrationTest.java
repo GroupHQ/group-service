@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.grouphq.groupservice.config.GroupProperties;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupEventService;
@@ -14,6 +15,7 @@ import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
 import org.grouphq.groupservice.group.domain.members.MemberEventService;
+import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,6 +66,8 @@ class GroupDemoLoaderIntegrationTest {
 
     @Autowired
     private MemberEventService memberEventService;
+    private static final String TITLE = "Title";
+    private static final String DESCRIPTION = "Description";
 
     @DynamicPropertySource
     static void postgresqlProperties(DynamicPropertyRegistry registry) {
@@ -127,54 +131,36 @@ class GroupDemoLoaderIntegrationTest {
     }
 
     @Test
+    @DisplayName("Active members in expired groups have their status changed to AUTO_LEFT")
+    void autoLeaveMembersInExpiredGroups() {
+        StepVerifier.create(
+            groupService.createGroup(TITLE, DESCRIPTION, 5)
+                .flatMap(group -> groupService.addMember(group.id(), "Member 1", UUID.randomUUID().toString())
+                    .then(groupService.addMember(group.id(), "Member 2", UUID.randomUUID().toString()))
+                    .thenReturn(group)
+                )
+                .flatMap(group -> groupDemoLoader.expireGroupsCreatedBefore(group.createdDate())
+                    .then(groupService.findGroupByIdWithAllMembers(group.id()))
+                )
+        )
+            .assertNext(group -> assertThat(group.members())
+                .hasSize(2)
+                .allMatch(member -> member.memberStatus().equals(MemberStatus.AUTO_LEFT)))
+            .verifyComplete();
+    }
+
+    @Test
     @DisplayName("Expires groups with time older than cutoff time")
     void expiresGroups() {
-        final Instant cutoffDate = Instant.now().minus(1, ChronoUnit.SECONDS);
-        final Group[] testGroups = new Group[3];
-
-        for (int i = 0; i < testGroups.length; i++) {
-            testGroups[i] = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
-        }
-
-        final List<Group> groupsSaved = new ArrayList<>();
-
-        StepVerifier.create(groupRepository.saveAll(Flux.just(testGroups)))
-            .recordWith(() -> groupsSaved)
-            .expectNextCount(3)
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        Group[] groupsToExpire = new Group[3];
-        for (int i = 0; i < groupsSaved.size(); i++) {
-            final Group group = groupsSaved.get(i);
-            groupsToExpire[i] = new Group(
-                group.id(), group.title(), group.description(),
-                group.maxGroupSize(), group.status(), group.lastModifiedDate(),
-                cutoffDate.minus(1, ChronoUnit.SECONDS), group.lastModifiedDate(),
-                group.createdBy(), group.lastModifiedBy(), group.version(), List.of()
-            );
-        }
-
-        StepVerifier.create(groupRepository.saveAll(Flux.just(groupsToExpire)))
-            .expectNextCount(3)
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        StepVerifier.create(groupDemoLoader.expireGroups(cutoffDate))
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        final List<Group> groups = new ArrayList<>();
-
-        StepVerifier.create(groupRepository.getAllGroups())
-            .recordWith(() -> groups)
-            .expectNextCount(3)
-            .expectComplete()
-            .verify(Duration.ofSeconds(1));
-
-        assertThat(groups)
-            .filteredOn(group -> group.status().equals(GroupStatus.AUTO_DISBANDED))
-            .hasSize(groups.size());
+        StepVerifier.create(
+            groupService.createGroup(TITLE, DESCRIPTION, 5)
+                .then(groupService.createGroup(TITLE, DESCRIPTION, 5))
+                .then(groupService.createGroup(TITLE, DESCRIPTION, 5))
+                .flatMapMany(group -> groupDemoLoader.expireGroupsCreatedBefore(group.createdDate()))
+                .thenMany(groupService.findActiveGroups())
+        )
+            .expectNextCount(0)
+            .verifyComplete();
     }
 
     @Test
@@ -192,7 +178,7 @@ class GroupDemoLoaderIntegrationTest {
             .verify(Duration.ofSeconds(1));
 
         final Instant cutoffDate = Instant.now().minus(1, ChronoUnit.SECONDS);
-        StepVerifier.create(groupDemoLoader.expireGroups(cutoffDate))
+        StepVerifier.create(groupDemoLoader.expireGroupsCreatedBefore(cutoffDate))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 

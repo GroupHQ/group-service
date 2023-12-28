@@ -5,18 +5,16 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
 import java.util.UUID;
 import org.grouphq.groupservice.group.domain.exceptions.EventAlreadyPublishedException;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.members.Member;
+import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
@@ -210,8 +208,11 @@ class OutboxServiceTest {
     void verifyGroupLeaveSuccessfulDataReturned() {
         final GroupLeaveRequestEvent requestEvent =
             GroupTestUtility.generateGroupLeaveRequestEvent();
+        final Member member = new Member(requestEvent.getMemberId(), UUID.fromString(requestEvent.getWebsocketId()),
+            "User", requestEvent.getAggregateId(), MemberStatus.ACTIVE, null, Instant.now(),
+            Instant.now(), "system", "system", 0);
 
-        StepVerifier.create(outboxService.createGroupLeaveSuccessfulEvent(requestEvent))
+        StepVerifier.create(outboxService.createGroupLeaveSuccessfulEvent(requestEvent, member))
             .assertNext(event -> assertThat(event).satisfies(outboxEvent -> {
                 assertThat(outboxEvent.getEventId())
                     .isEqualTo(requestEvent.getEventId());
@@ -221,10 +222,8 @@ class OutboxServiceTest {
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
                     .isEqualTo(EventType.MEMBER_LEFT);
-                assertThat(objectMapper.readValue(outboxEvent.getEventData(),
-                    new TypeReference<Map<String, Object>>() {})).isNotNull()
-                    .isEqualTo(
-                        Collections.singletonMap("memberId", requestEvent.getMemberId()));
+                assertThat(objectMapper.readValue(outboxEvent.getEventData(), Member.class).id())
+                    .isEqualTo(member.id());
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.SUCCESSFUL);
                 assertThat(outboxEvent.getWebsocketId())
