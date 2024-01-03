@@ -267,4 +267,40 @@ class MemberRepositoryTest {
             .expectComplete()
             .verify(Duration.ofSeconds(1));
     }
+
+    @Test
+    @DisplayName("Returns member by websocketId and member status")
+    void returnMemberByWebsocketIdAndMemberStatus() {
+        StepVerifier.create(
+                groupRepository.save(GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE))
+                    .flatMap(group -> {
+                        final Member member = Member.of(USER, group.id());
+                        return memberRepository.save(member)
+                            .flatMap(savedMember -> memberRepository.findMemberByWebsocketIdAndMemberStatus(
+                                savedMember.websocketId(), savedMember.memberStatus()));
+                    })
+            )
+            .assertNext(member -> {
+                assertThat(member.username()).isEqualTo(USER);
+                assertThat(member.memberStatus()).isEqualTo(MemberStatus.ACTIVE);
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Returns nothing if no member found by websocketId and member status")
+    void returnNothingIfNoMemberFoundByWebsocketIdAndMemberStatus() {
+        StepVerifier.create(
+                groupRepository.save(GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE))
+                    .flatMap(group -> {
+                        final Member member = Member.of(USER, group.id());
+                        return memberRepository.save(member)
+                            .flatMap(savedMember -> memberRepository.removeMemberFromGroup(
+                                savedMember.id(), savedMember.websocketId(), MemberStatus.LEFT))
+                            .flatMap(leftMember -> memberRepository.findMemberByWebsocketIdAndMemberStatus(
+                                leftMember.websocketId(), MemberStatus.ACTIVE));
+                    })
+            )
+            .verifyComplete();
+    }
 }

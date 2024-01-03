@@ -2,6 +2,7 @@ package org.grouphq.groupservice.group.domain.members.repository;
 
 import java.util.UUID;
 import org.grouphq.groupservice.group.domain.members.Member;
+import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
@@ -23,4 +24,6 @@ public interface MemberRepository
 
     @Query("SELECT * FROM members WHERE id = :id AND websocket_id = :websocketId")
     Mono<Member> findMemberByIdAndWebsocketId(Long id, UUID websocketId);
+
+    Mono<Member> findMemberByWebsocketIdAndMemberStatus(UUID websocketId, MemberStatus memberStatus);
 }

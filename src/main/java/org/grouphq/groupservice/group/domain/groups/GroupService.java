@@ -137,6 +137,12 @@ public class GroupService {
             .onErrorMap(exceptionMapper::getBusinessException);
     }
 
+    public Mono<Member> findActiveMemberForUser(String websocketId) {
+        return memberRepository.findMemberByWebsocketIdAndMemberStatus(
+            UUID.fromString(websocketId), MemberStatus.ACTIVE
+        );
+    }
+
     public Group generateGroup() {
         final Faker faker = new Faker();
 

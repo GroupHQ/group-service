@@ -342,4 +342,33 @@ class GroupServiceTest {
             .expectError(MemberNotFoundException.class)
             .verify();
     }
+
+    @Test
+    @DisplayName("Finds active member for user when user is in a group")
+    void findsActiveMemberForUserWhenUserIsInGroup() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString())
+                            .flatMap(member ->
+                                groupService.findActiveMemberForUser(member.websocketId().toString()))
+                    )
+            )
+            .assertNext(member -> assertThat(member.username()).isEqualTo(USER))
+            .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Returns nothing when trying to find active member for user when user is not in a group")
+    void failsGracefullyWhenFindingActiveMemberForUserWhenUserIsNotInGroup() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString())
+                            .flatMap(member ->
+                                groupService.findActiveMemberForUser(UUID.randomUUID().toString()))
+                    )
+            )
+            .verifyComplete();
+    }
 }
