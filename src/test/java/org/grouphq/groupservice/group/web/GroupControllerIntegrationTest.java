@@ -3,11 +3,16 @@ package org.grouphq.groupservice.group.web;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.Base64;
+import java.util.UUID;
 import org.grouphq.groupservice.config.DataConfig;
 import org.grouphq.groupservice.config.SecurityConfig;
 import org.grouphq.groupservice.group.domain.groups.Group;
+import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
+import org.grouphq.groupservice.group.domain.members.Member;
+import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -32,6 +37,9 @@ import reactor.test.StepVerifier;
 @Testcontainers
 @Tag("IntegrationTest")
 class GroupControllerIntegrationTest {
+
+    @Autowired
+    private GroupService groupService;
 
     @Autowired
     private GroupRepository groupRepository;
@@ -82,5 +90,72 @@ class GroupControllerIntegrationTest {
                         group.status().equals(GroupStatus.ACTIVE),
                     "All groups received should be active");
             });
+    }
+
+    @Test
+    @DisplayName("When there are no active groups, then return an empty list")
+    void returnEmptyListWhenNoActiveGroups() {
+        webTestClient
+            .get()
+            .uri("/api/groups")
+            .exchange()
+            .expectStatus().is2xxSuccessful()
+            .expectBodyList(Group.class).value(retrievedGroups -> assertThat(retrievedGroups).isEmpty());
+    }
+
+    @Test
+    @DisplayName("When a user has an active member, then return the active member")
+    void returnCurrentMemberForUser() {
+        final Group group = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
+        final String websocketId = UUID.randomUUID().toString();
+        StepVerifier.create(
+                groupRepository.save(group)
+                    .flatMap(savedGroup ->
+                        groupService.addMember(savedGroup.id(), "username", websocketId))
+            )
+            .expectNextCount(1)
+            .verifyComplete();
+
+        webTestClient
+            .get()
+            .uri("/api/groups/my-member")
+            .header("Authorization", basicAuthHeaderValue(websocketId))
+            .exchange()
+            .expectStatus().is2xxSuccessful()
+            .expectBody(Member.class).value(retrievedMember -> {
+                assertThat(retrievedMember).isNotNull();
+                assertThat(retrievedMember.websocketId()).isEqualTo(UUID.fromString(websocketId));
+                assertThat(retrievedMember.memberStatus()).isEqualTo(MemberStatus.ACTIVE);
+            });
+    }
+
+    @Test
+    @DisplayName("When a user has no active member, then return an empty body")
+    void returnEmptyBodyWhenNoCurrentMemberForUser() {
+        final String websocketId = UUID.randomUUID().toString();
+        webTestClient
+            .get()
+            .uri("/api/groups/my-member")
+            .header("Authorization", basicAuthHeaderValue(websocketId))
+            .exchange()
+            .expectStatus().is2xxSuccessful()
+            .expectBody().isEmpty();
+    }
+
+    @Test
+    @DisplayName("Returns 401 when requesting current member with invalid authorization")
+    void rejectBadRequest() {
+        webTestClient
+            .get()
+            .uri("/api/groups/my-member")
+            .exchange()
+            .expectStatus().isUnauthorized()
+            .expectBody().isEmpty();
+    }
+
+
+    private String basicAuthHeaderValue(String websocketId) {
+        final String credentials = websocketId + ":";
+        return "Basic " + new String(Base64.getEncoder().encode(credentials.getBytes()));
     }
 }

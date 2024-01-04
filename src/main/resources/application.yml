@@ -23,7 +23,7 @@ group:
         fixed-delay: 300
         group-lifetime: 1800
       load-members:
-        initial-delay: 5
+        initial-delay: 2147483647
         fixed-delay: 60
         member-join-max-delay: 120
 spring:
