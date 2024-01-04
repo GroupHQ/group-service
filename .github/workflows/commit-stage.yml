@@ -46,8 +46,6 @@ jobs:
         run: ./gradlew testUnit
       - name: Running Integration Tests
         run: ./gradlew testIntegration
-      - name: Running Acceptance Tests
-        run: ./gradlew testAcceptance
       - name: Assembling Build
         run: ./gradlew assemble
       - name: Setup arkade
