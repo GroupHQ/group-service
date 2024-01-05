@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.hibernate.validator.constraints.Length;
 
 /**
@@ -13,6 +14,7 @@ import org.hibernate.validator.constraints.Length;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@ToString(callSuper = true)
 public class GroupJoinRequestEvent extends RequestEvent {
 
     @NotBlank(message = "Username must be provided and not blank")

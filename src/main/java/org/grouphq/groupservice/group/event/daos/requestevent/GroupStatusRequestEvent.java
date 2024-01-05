@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 
 /**
@@ -13,6 +14,7 @@ import org.grouphq.groupservice.group.domain.groups.GroupStatus;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@ToString(callSuper = true)
 public class GroupStatusRequestEvent extends RequestEvent {
 
     @NotNull(message = "New status must be provided")

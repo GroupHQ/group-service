@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 /**
  * Data class for the group leave request event.
@@ -13,6 +14,7 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@ToString(callSuper = true)
 public class GroupLeaveRequestEvent extends RequestEvent {
 
     @NotNull(message = "Member ID must be provided")
