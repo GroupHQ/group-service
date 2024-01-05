@@ -127,7 +127,7 @@ public class OutboxService {
         Throwable failure) {
 
         return Mono.fromCallable(() -> {
-            log.debug("Creating Group Leave Update Successful Result...");
+            log.debug("Creating Group Leave Update Failed Result...");
             return OutboxEvent.of(
                 leaveRequest.getEventId(),
                 leaveRequest.getAggregateId(),
