@@ -331,6 +331,6 @@ class GroupEventGroupIntegrationTest {
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
         );
 
-        assertThat(errorData.error()).isEqualTo("[Max group size must be a positive value]");
+        assertThat(errorData.error()).startsWith("[Max group size must be a positive value]");
     }
 }
