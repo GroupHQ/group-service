@@ -152,6 +152,7 @@ public class GroupEventHandler {
     }
 
     private <T extends RequestEvent> Mono<RequestEvent> validateRequest(T requestEvent) {
+        log.info("Validating request: {}", requestEvent);
         final Set<ConstraintViolation<T>> violations = validator.validate(requestEvent);
 
         final List<String> violationInfo = violations.stream()
@@ -159,6 +160,6 @@ public class GroupEventHandler {
             .toList();
 
         return violations.isEmpty() ? Mono.just(requestEvent) :
-            Mono.error(new IllegalArgumentException(violationInfo + " for event: " + requestEvent));
+            Mono.error(new IllegalArgumentException(violationInfo.toString()));
     }
 }
