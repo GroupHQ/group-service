@@ -159,6 +159,6 @@ public class GroupEventHandler {
             .toList();
 
         return violations.isEmpty() ? Mono.just(requestEvent) :
-            Mono.error(new IllegalArgumentException(violationInfo.toString()));
+            Mono.error(new IllegalArgumentException(violationInfo + " for event: " + requestEvent));
     }
 }
