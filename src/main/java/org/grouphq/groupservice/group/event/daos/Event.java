@@ -21,12 +21,12 @@ import lombok.NoArgsConstructor;
 @Data
 public abstract class Event {
     @NotNull(message = "Event ID must be provided")
-    private final UUID eventId;
+    protected final UUID eventId;
 
     @Positive(message = "Aggregate ID must be a positive value")
-    private final Long aggregateId;
+    protected final Long aggregateId;
 
     @NotNull(message = "Created date must be provided")
     @PastOrPresent(message = "Created date must be in the past or present")
-    private final Instant createdDate;
+    protected final Instant createdDate;
 }

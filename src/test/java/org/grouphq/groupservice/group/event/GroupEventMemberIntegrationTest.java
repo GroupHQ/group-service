@@ -23,9 +23,7 @@ import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
 import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.requestevent.GroupLeaveRequestEvent;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -57,7 +55,7 @@ class GroupEventMemberIntegrationTest {
      * TestChannelBinderConfiguration class, which is imported above.
      * IntelliJ or other IDEs may complain with the following error:
      * "Could not autowire. No beans of 'InputDestination' type found."
-     * This is a false positive. The project will still compile and run as expected.
+     * This is a false negative. The project will still compile and run as expected.
      */
     @Autowired
     private InputDestination inputDestination;
@@ -103,6 +101,11 @@ class GroupEventMemberIntegrationTest {
         return String.format("r2dbc:postgresql://%s:%s/%s", POSTGRESQL_CONTAINER.getHost(),
             POSTGRESQL_CONTAINER.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT),
             POSTGRESQL_CONTAINER.getDatabaseName());
+    }
+
+    @AfterEach
+    void clearEvents() {
+        outputDestination.clear();
     }
 
     @Test

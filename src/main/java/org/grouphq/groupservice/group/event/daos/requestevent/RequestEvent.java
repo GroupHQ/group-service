@@ -17,7 +17,7 @@ import org.grouphq.groupservice.group.event.daos.Event;
 @Data
 public abstract class RequestEvent extends Event {
 
-    private final String websocketId;
+    protected final String websocketId;
 
     public RequestEvent(
         UUID eventId,
