@@ -44,8 +44,20 @@ jobs:
           ./gradlew pmdTest
       - name: Running Unit Tests
         run: ./gradlew testUnit
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: unit-test-report
+          path: group-service/build/reports/tests/testUnit/
       - name: Running Integration Tests
         run: ./gradlew testIntegration
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: integration-test-report
+          path: group-service/build/reports/tests/testIntegration/
       - name: Assembling Build
         run: ./gradlew assemble
       - name: Setup arkade
