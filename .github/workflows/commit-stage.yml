@@ -49,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: unit-test-report
-          path: build/reports/tests/testUnit/index.html
+          path: build/reports/tests/testUnit
       - name: Running Integration Tests
         run: ./gradlew testIntegration
       - name: Upload test report
@@ -57,7 +57,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: integration-test-report
-          path: build/reports/tests/testIntegration/index.html
+          path: build/reports/tests/testIntegration
       - name: Assembling Build
         run: ./gradlew assemble
       - name: Setup arkade
