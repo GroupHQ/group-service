@@ -112,7 +112,8 @@ public class GroupEventHandler {
                     .doOnError(throwable ->
                         log.info("Cannot create group: {}", throwable.getMessage()))
                     .onErrorResume(throwable ->
-                        groupEventService.createGroupFailed(groupCreateRequestEvent, throwable))
+                        groupEventService.createGroupFailed(groupCreateRequestEvent, throwable)
+                            .then(Mono.empty()))
                     .doOnError(throwable -> log.error(
                         "Error processing group creation failure: {}", throwable.getMessage()))
                     .onErrorResume(throwable -> Mono.empty());

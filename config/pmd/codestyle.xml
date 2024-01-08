@@ -36,7 +36,6 @@
     <rule ref="category/java/codestyle.xml/MDBAndSessionBeanNamingConvention" />
     <rule ref="category/java/codestyle.xml/MethodNamingConventions" />
     <rule ref="category/java/codestyle.xml/NoPackage" />
-    <rule ref="category/java/codestyle.xml/OnlyOneReturn" />
     <rule ref="category/java/codestyle.xml/PackageCase" />
     <rule ref="category/java/codestyle.xml/PrematureDeclaration" />
     <rule ref="category/java/codestyle.xml/RemoteInterfaceNamingConvention" />
@@ -86,4 +85,6 @@
 <!-- Tests require this limit to be arbitrarily high, rendering this rule useless.  -->
 <!--    <rule ref="category/java/codestyle.xml/TooManyStaticImports" />-->
 
+<!--  Prefer to have guard clauses  -->
+<!--    <rule ref="category/java/codestyle.xml/OnlyOneReturn" />-->
 </ruleset>

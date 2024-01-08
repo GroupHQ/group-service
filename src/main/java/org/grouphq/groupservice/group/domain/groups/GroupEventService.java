@@ -10,6 +10,8 @@ import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequest
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
  * A service for performing business logic related to groups.
@@ -27,26 +29,33 @@ public class GroupEventService {
 
 
     @Transactional
-    public Mono<Void> createGroup(GroupCreateRequestEvent event) {
+    public Mono<Group> createGroup(GroupCreateRequestEvent event) {
 
         log.info("Received create group request: {}", event);
         return outboxService.errorIfEventPublished(event)
             .flatMap(this::createGroupCreateEvent)
-            .flatMap(outboxService::saveOutboxEvent)
+            .flatMap(outboxEventAndGroup -> {
+                final OutboxEvent outboxEvent = outboxEventAndGroup.getT1();
+                final Group group = outboxEventAndGroup.getT2();
+
+                return outboxService.saveOutboxEvent(outboxEvent)
+                    .thenReturn(group);
+            })
             .doOnSuccess(emptySave ->
                 log.info("Fulfilled create request. Created group and outbox event: {}", event))
             .log()
             .onErrorMap(exceptionMapper::getBusinessException);
     }
 
-    private Mono<OutboxEvent> createGroupCreateEvent(GroupCreateRequestEvent createRequestEvent) {
+    private Mono<Tuple2<OutboxEvent, Group>> createGroupCreateEvent(GroupCreateRequestEvent createRequestEvent) {
         return groupService
             .createGroup(
                 createRequestEvent.getTitle(),
                 createRequestEvent.getDescription(),
                 createRequestEvent.getMaxGroupSize())
             .flatMap(savedGroup -> outboxService
-                .createGroupCreateSuccessfulEvent(createRequestEvent, savedGroup));
+                .createGroupCreateSuccessfulEvent(createRequestEvent, savedGroup)
+                .map(outboxEvent -> Tuples.of(outboxEvent, savedGroup)));
     }
 
     @Transactional
