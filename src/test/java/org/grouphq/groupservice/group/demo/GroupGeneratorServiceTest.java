@@ -21,9 +21,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 import reactor.test.StepVerifier;
 
 @SpringBootTest
+@Testcontainers
 @Tag("IntegrationTest")
 class GroupGeneratorServiceTest {
 
@@ -37,6 +44,24 @@ class GroupGeneratorServiceTest {
     private GroupGeneratorService groupGeneratorService;
 
     private static final CharacterEntity CHARACTER_ENTITY = CharacterEntity.createRandomCharacter();
+
+    @Container
+    private static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
+        new PostgreSQLContainer<>(DockerImageName.parse("postgres:14.4"));
+
+    @DynamicPropertySource
+    private static void postgresqlProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.r2dbc.url", GroupGeneratorServiceTest::r2dbcUrl);
+        registry.add("spring.r2dbc.username", POSTGRESQL_CONTAINER::getUsername);
+        registry.add("spring.r2dbc.password", POSTGRESQL_CONTAINER::getPassword);
+        registry.add("spring.flyway.url", POSTGRESQL_CONTAINER::getJdbcUrl);
+    }
+
+    private static String r2dbcUrl() {
+        return String.format("r2dbc:postgresql://%s:%s/%s", POSTGRESQL_CONTAINER.getHost(),
+            POSTGRESQL_CONTAINER.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT),
+            POSTGRESQL_CONTAINER.getDatabaseName());
+    }
     
 
     private String sampleContent() {
