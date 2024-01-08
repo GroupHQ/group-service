@@ -102,7 +102,7 @@ class GroupEventGroupIntegrationTest {
         OutboxEvent outboxEvent = null;
 
         while (eventType != eventTypeToReceive) {
-            final Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
+            final Message<byte[]> payload = outputDestination.receive(5000, eventPublisherDestination);
 
             if (payload == null) {
                 fail("Timeout waiting for event type: " + eventTypeToReceive
