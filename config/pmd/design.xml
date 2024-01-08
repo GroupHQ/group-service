@@ -21,7 +21,6 @@
     <rule ref="category/java/design.xml/CognitiveComplexity" />
     <rule ref="category/java/design.xml/CollapsibleIfStatements" />
     <rule ref="category/java/design.xml/CouplingBetweenObjects" />
-    <rule ref="category/java/design.xml/CyclomaticComplexity" />
     <rule ref="category/java/design.xml/DataClass" />
     <rule ref="category/java/design.xml/DoNotExtendJavaLangError" />
     <rule ref="category/java/design.xml/ExceptionAsFlowControl" />
@@ -76,4 +75,7 @@
 <!-- Doesn't play well when using records with 'with...' methods -->
 <!--    <rule ref="category/java/design.xml/ExcessiveParameterList" />-->
 <!--    <rule ref="category/java/design.xml/UseObjectForClearerAPI" />-->
+
+<!--  CharacterEntity class requires high cyclomatic complexity  -->
+<!--    <rule ref="category/java/design.xml/CyclomaticComplexity" />-->
 </ruleset>

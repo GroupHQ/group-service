@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuples;
 
 /**
  * Tests GroupDemoLoader's method logic.
@@ -39,6 +40,9 @@ class GroupDemoLoaderTest {
     private GroupService groupService;
 
     @Mock
+    private GroupGeneratorService groupGeneratorService;
+
+    @Mock
     private GroupEventService groupEventService;
 
     @InjectMocks
@@ -48,8 +52,10 @@ class GroupDemoLoaderTest {
     @DisplayName("Generates group and saves a group to the database")
     void loaderTest() {
         final Group mockGroup = mock(Group.class);
+        final CharacterEntity mockCharacterEntity = mock(CharacterEntity.class);
 
-        given(groupService.generateGroup()).willReturn(mockGroup);
+        given(groupGeneratorService.generateGroup(any(CharacterEntity.class)))
+            .willReturn(Mono.just(Tuples.of(mockGroup, mockCharacterEntity)));
 
         given(groupEventService.createGroup(any(GroupCreateRequestEvent.class)))
             .willReturn(Mono.empty());
@@ -58,7 +64,7 @@ class GroupDemoLoaderTest {
             .expectComplete()
             .verify();
 
-        verify(groupService, times(3)).generateGroup();
+        verify(groupGeneratorService, times(3)).generateGroup(any(CharacterEntity.class));
         verify(groupEventService, times(3)).createGroup(any(GroupCreateRequestEvent.class));
     }
 

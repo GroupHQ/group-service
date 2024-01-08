@@ -2,6 +2,7 @@ package org.grouphq.groupservice.config;
 
 import lombok.RequiredArgsConstructor;
 import org.grouphq.groupservice.group.demo.GroupDemoLoader;
+import org.grouphq.groupservice.group.demo.GroupGeneratorService;
 import org.grouphq.groupservice.group.domain.groups.GroupEventService;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.members.MemberEventService;
@@ -20,6 +21,8 @@ public class GroupDemoLoaderConfig {
 
     private final GroupProperties groupProperties;
 
+    private final GroupGeneratorService groupGeneratorService;
+
     private final GroupService groupService;
 
     private final GroupEventService groupEventService;
@@ -29,6 +32,7 @@ public class GroupDemoLoaderConfig {
     @Bean
     @ConditionalOnProperty(name = "group.loader.enabled", havingValue = "true")
     public GroupDemoLoader groupDemoLoader() {
-        return new GroupDemoLoader(groupProperties, groupService, groupEventService, memberEventService);
+        return new GroupDemoLoader(groupProperties, groupGeneratorService, groupService,
+            groupEventService, memberEventService);
     }
 }

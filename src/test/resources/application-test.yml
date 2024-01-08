@@ -1,3 +1,5 @@
+openai:
+  api_key: fake-api-key
 spring:
   flyway:
     locations:

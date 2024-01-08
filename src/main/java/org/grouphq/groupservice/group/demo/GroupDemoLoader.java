@@ -1,6 +1,5 @@
 package org.grouphq.groupservice.group.demo;
 
-import com.github.javafaker.Faker;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -20,6 +19,8 @@ import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequest
 import org.springframework.scheduling.annotation.Scheduled;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
  * A Spring Job scheduler for periodically adding active groups
@@ -32,6 +33,8 @@ public class GroupDemoLoader {
     private final GroupProperties groupProperties;
 
     private boolean initialStateLoaded;
+
+    private final GroupGeneratorService generateGroupPostingService;
 
     private final GroupService groupService;
 
@@ -55,9 +58,28 @@ public class GroupDemoLoader {
 
         initialStateLoaded = true;
 
-        return Flux.just(generateCreateGroupEvents(groupsToAdd))
+        return generateCreateGroupEvents(groupsToAdd)
             .delayElements(Duration.ofSeconds(1))
-            .flatMap(groupEventService::createGroup)
+            .flatMap(groupRequestAndCharacterTuple -> {
+                final GroupCreateRequestEvent groupCreateRequestEvent = groupRequestAndCharacterTuple.getT1();
+                final CharacterEntity characterEntity = groupRequestAndCharacterTuple.getT2();
+
+                return groupEventService.createGroup(groupCreateRequestEvent)
+                    .flatMap(group -> {
+                        final GroupJoinRequestEvent groupJoinRequestEvent = new GroupJoinRequestEvent(
+                            UUID.randomUUID(), group.id(), characterEntity.getName(),
+                            UUID.randomUUID().toString(), Instant.now());
+
+                        return memberEventService.joinGroup(groupJoinRequestEvent)
+                            .onErrorResume(throwable ->
+                                groupEventService.createGroupFailed(groupCreateRequestEvent, throwable))
+                            .onErrorResume(throwable -> {
+                                log.error("Error creating group", throwable);
+                                // log to sentry
+                                return Mono.empty();
+                            });
+                    });
+            })
             .onErrorResume(throwable -> {
                 log.error("Error creating group", throwable);
                 // log to sentry
@@ -65,18 +87,20 @@ public class GroupDemoLoader {
             });
     }
 
-    private GroupCreateRequestEvent[] generateCreateGroupEvents(int groupsToAdd) {
-        GroupCreateRequestEvent[] createRequestEvents = new GroupCreateRequestEvent[groupsToAdd];
+    private Flux<Tuple2<GroupCreateRequestEvent, CharacterEntity>> generateCreateGroupEvents(int groupsToAdd) {
+        return Flux.range(0, groupsToAdd)
+            .flatMap(i -> generateGroupPostingService.generateGroup(CharacterEntity.createRandomCharacter()))
+            .map(groupCharacterTuple2 -> {
+                final Group group = groupCharacterTuple2.getT1();
+                final CharacterEntity characterEntity = groupCharacterTuple2.getT2();
 
-        for (int i = 0; i < groupsToAdd; i++) {
-            final Group group = groupService.generateGroup();
-            createRequestEvents[i] = new GroupCreateRequestEvent(
-                UUID.randomUUID(), group.title(), group.description(),
-                group.maxGroupSize(), "system", null,
-                Instant.now());
-        }
+                final GroupCreateRequestEvent groupCreateRequestEvent = new GroupCreateRequestEvent(
+                    UUID.randomUUID(), group.title(), group.description(),
+                    group.maxGroupSize(), "system", null,
+                    Instant.now());
 
-        return createRequestEvents;
+                return Tuples.of(groupCreateRequestEvent, characterEntity);
+            });
     }
 
     @Scheduled(initialDelayString = "${group.loader.group-service-jobs.expire-groups.initial-delay}",
@@ -132,11 +156,11 @@ public class GroupDemoLoader {
     }
 
     private Mono<GroupJoinRequestEvent> createGroupJoinEvent(Long groupId) {
-        final Faker faker = new Faker();
+        final CharacterEntity characterEntity = CharacterEntity.createRandomCharacter();
 
         return Mono.just(
             new GroupJoinRequestEvent(
-                UUID.randomUUID(), groupId, faker.name().firstName(),
+                UUID.randomUUID(), groupId, characterEntity.getName(),
                 UUID.randomUUID().toString(), Instant.now())
         );
     }

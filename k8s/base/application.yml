@@ -20,7 +20,7 @@ group:
       expire-groups:
         initial-delay: 0
         fixed-delay: 300
-        group-lifetime: 1800
+        group-lifetime: 2147483647
       load-members:
         initial-delay: 2147483647
         fixed-delay: 60

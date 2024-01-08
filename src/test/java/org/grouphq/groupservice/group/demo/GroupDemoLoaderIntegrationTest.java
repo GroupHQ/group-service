@@ -50,6 +50,9 @@ class GroupDemoLoaderIntegrationTest {
     private GroupDemoLoader groupDemoLoader;
 
     @Autowired
+    private GroupGeneratorService groupGeneratorService;
+
+    @Autowired
     private GroupRepository groupRepository;
 
     @Autowired
@@ -86,7 +89,8 @@ class GroupDemoLoaderIntegrationTest {
     @BeforeEach
     void clearRepositories() {
         this.groupDemoLoader =
-            new GroupDemoLoader(groupProperties, groupService, groupEventService, memberEventService);
+            new GroupDemoLoader(groupProperties, groupGeneratorService, groupService,
+                groupEventService, memberEventService);
         StepVerifier.create(memberRepository.deleteAll().thenMany(groupRepository.deleteAll()))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
@@ -208,7 +212,9 @@ class GroupDemoLoaderIntegrationTest {
                 .thenMany(groupDemoLoader.loadMembers(memberJoinMaxDelay))
                 .thenMany(groupService.findActiveGroupsWithMembers()).collectList())
             .assertNext(groups ->
-                assertThat(groups).allSatisfy(group -> assertThat(group.members().size()).isEqualTo(2)))
+                assertThat(groups).allSatisfy(group ->
+                    assertThat(group.members().size())
+                        .isEqualTo(3))) // includes member added during group creation
             .verifyComplete();
     }
 }

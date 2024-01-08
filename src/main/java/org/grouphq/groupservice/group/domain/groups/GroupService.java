@@ -1,6 +1,5 @@
 package org.grouphq.groupservice.group.domain.groups;
 
-import com.github.javafaker.Faker;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -141,14 +140,5 @@ public class GroupService {
         return memberRepository.findMemberByWebsocketIdAndMemberStatus(
             UUID.fromString(websocketId), MemberStatus.ACTIVE
         );
-    }
-
-    public Group generateGroup() {
-        final Faker faker = new Faker();
-
-        final int maxCapacity = faker.number().numberBetween(2, 64);
-
-        return Group.of(faker.lorem().sentence(), faker.lorem().sentence(20),
-            maxCapacity, GroupStatus.ACTIVE);
     }
 }
