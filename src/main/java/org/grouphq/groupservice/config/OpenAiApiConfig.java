@@ -17,7 +17,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "openai")
 public class OpenAiApiConfig {
 
-    @NotNull(message = "OpenAI API key must be provided")
+    private boolean enabled;
+
     private String apiKey;
 
     @NotNull(message = "OpenAI model Id must be provided")

@@ -69,6 +69,7 @@ class OpenAiGroupGeneratorServiceTest {
         final ChatCompletionResult resultStub = new ChatCompletionResult();
         resultStub.setChoices(choiceList);
 
+        given(openAiApiConfig.isEnabled()).willReturn(true);
         given(openAiService.createChatCompletion(any(ChatCompletionRequest.class))).willReturn(resultStub);
 
         StepVerifier.create(openAiGroupGeneratorService.generateGroup(CHARACTER_ENTITY, MAX_GROUP_SIZE))

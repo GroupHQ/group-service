@@ -33,6 +33,10 @@ public class OpenAiGroupGeneratorService {
     private final OpenAiApiConfig openAiApiConfig;
 
     public Mono<Tuple2<Group, CharacterEntity>> generateGroup(CharacterEntity characterEntity, int maxGroupSize) {
+        if (!openAiApiConfig.isEnabled()) {
+            return Mono.error(new IllegalStateException("OpenAI API is not enabled"));
+        }
+
         final var retryConfig = openAiApiConfig.getRetryConfig();
 
         return Mono.fromCallable(() ->

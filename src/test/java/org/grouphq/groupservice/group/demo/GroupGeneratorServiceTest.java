@@ -67,6 +67,7 @@ class GroupGeneratorServiceTest {
         final ChatCompletionResult resultStub = new ChatCompletionResult();
         resultStub.setChoices(choiceList);
 
+        given(openAiApiConfig.isEnabled()).willReturn(true);
         given(openAiService.createChatCompletion(any(ChatCompletionRequest.class))).willReturn(resultStub);
 
         StepVerifier.create(groupGeneratorService.generateGroup(CHARACTER_ENTITY))
@@ -88,6 +89,7 @@ class GroupGeneratorServiceTest {
     @Test
     @DisplayName("Generates a group using fallback method if OpenAI API call fails")
     void testGenerateGroupPostingFallback() {
+        given(openAiApiConfig.isEnabled()).willReturn(true);
         given(openAiService.createChatCompletion(any(ChatCompletionRequest.class)))
             .willThrow(OpenAiHttpException.class);
 
