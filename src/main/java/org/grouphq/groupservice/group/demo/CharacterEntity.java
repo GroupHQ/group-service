@@ -29,7 +29,7 @@ public class CharacterEntity {
 
     public static CharacterEntity createRandomCharacter() {
         final Faker faker = new Faker();
-        final int randomNum = faker.number().numberBetween(1, 14);
+        final int randomNum = faker.number().numberBetween(1, 15);
 
         return getCharacter(randomNum);
     }
