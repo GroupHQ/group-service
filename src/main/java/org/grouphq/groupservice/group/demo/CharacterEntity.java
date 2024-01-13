@@ -14,6 +14,7 @@ import com.github.javafaker.StarTrek;
 import com.github.javafaker.Superhero;
 import com.github.javafaker.Witcher;
 import com.github.javafaker.Zelda;
+import java.util.Random;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -26,10 +27,13 @@ public class CharacterEntity {
 
     private final String name;
     private final String universe;
+    private static final Random RANDOM = new Random();
 
     public static CharacterEntity createRandomCharacter() {
-        final Faker faker = new Faker();
-        final int randomNum = faker.number().numberBetween(1, 15);
+        final int min = 1;
+        final int max = 15;
+
+        final int randomNum = RANDOM.nextInt(max - min) + min; // range of 1 (inclusive) to 15 (exclusive)
 
         return getCharacter(randomNum);
     }
