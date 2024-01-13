@@ -65,7 +65,8 @@ jobs:
       - name: Validate Kubernetes manifests
         run: |
           arkade get kubeconform
-          kustomize build k8s | kubeconform -strict -summary -output json
+          kustomize build k8s/base | kubeconform -strict -summary -output json
+          kustomize build k8s/overlays/observability | kubeconform -strict -summary -output json
   package:
     name: Package and Publish
     if: ${{ github.ref == 'refs/heads/main' }}

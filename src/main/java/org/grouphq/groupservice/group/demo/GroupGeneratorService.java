@@ -26,7 +26,7 @@ public class GroupGeneratorService {
     public Mono<Tuple2<Group, CharacterEntity>> generateGroup(CharacterEntity characterEntity) {
         final Faker faker = new Faker();
         int maxCapacity = faker.number().numberBetween(1, 100);
-        maxCapacity = (maxCapacity / 10) * 10;
+        maxCapacity = ((maxCapacity / 10) * 10) + 10;
 
         return openAiGroupGeneratorService.generateGroup(characterEntity, maxCapacity)
             .doOnError(e -> log.error("Error generating group posting: {}", e.getMessage()))
