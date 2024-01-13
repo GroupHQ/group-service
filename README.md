@@ -195,7 +195,7 @@ The following container diagram shows Group Services' place in the GroupHQ Softw
 Shown in the diagram, Group Service communicates with two downstream services: a database and an event broker, 
 while being called by an upstream service, Group Sync.
 
-![structurizr-1-GroupHQ_Demo_Containers Alpha 0 1 1 1](https://github.com/GroupHQ/group-service/assets/88041024/d25bab2e-fedc-43a0-83f0-4dff2206ec97)
+![GroupHQ_Demo_Containers_noObservability](https://github.com/GroupHQ/group-service/assets/88041024/3b9b98f1-06a3-49d1-b04f-2ea5943b218a)
 
 ### Component Diagram
 ![structurizr-1-GroupHQ_GroupService_Components](https://github.com/GroupHQ/group-service/assets/88041024/7806d241-b131-44ed-8f12-8975ae426d7c)
