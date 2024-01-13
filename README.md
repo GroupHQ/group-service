@@ -24,6 +24,10 @@ Group Service provides functionality for managing and joining dynamically genera
   - [User Automated Tests & Regression Testing](#User-Automated-Tests--Regression-Testing)
 - [Group Service Architecture](#Group-Service-Architecture)
   - [Component Diagram](#Component-Diagram)
+  - [Example of Event Flow: User Joining a Group](#Example-of-Event-Flow-User-Joining-a-Group)
+    - [1. Group Sync Publishes a Group Join Request to the Event Broker](#1-Group-Sync-Publishes-a-Group-Join-Request-to-the-Event-Broker)
+    - [2. Group Service Consumes this Request From the Broker And Publishes an OutboxEvent to the Broker](#2-Group-Service-Consumes-this-Request-From-the-Broker-And-Publishes-an-OutboxEvent-to-the-Broker)
+    - [3. Group Sync Consumes this OutboxEvent and Forwards the Event Info to all Connected Users](#3-Group-Sync-Consumes-this-OutboxEvent-and-Forwards-the-Event-Info-to-all-Connected-Users)
 
 ## Synopsis
 Group service handles all business logic related to the processing of groups and their members.

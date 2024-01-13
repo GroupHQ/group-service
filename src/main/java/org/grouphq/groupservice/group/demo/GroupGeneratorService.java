@@ -1,6 +1,7 @@
 package org.grouphq.groupservice.group.demo;
 
 import com.github.javafaker.Faker;
+import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.ai.OpenAiGroupGeneratorService;
@@ -22,11 +23,10 @@ import reactor.util.function.Tuples;
 public class GroupGeneratorService {
 
     private final OpenAiGroupGeneratorService openAiGroupGeneratorService;
+    private static final Random RANDOM = new Random();
 
     public Mono<Tuple2<Group, CharacterEntity>> generateGroup(CharacterEntity characterEntity) {
-        final Faker faker = new Faker();
-        int maxCapacity = faker.number().numberBetween(1, 100);
-        maxCapacity = ((maxCapacity / 10) * 10) + 10;
+        final int maxCapacity = getRandomGroupCapacity();
 
         return openAiGroupGeneratorService.generateGroup(characterEntity, maxCapacity)
             .doOnError(e -> log.error("Error generating group posting: {}", e.getMessage()))
@@ -34,11 +34,23 @@ public class GroupGeneratorService {
     }
 
     public Group generateGroup() {
-        final Faker faker = new Faker();
+        final int maxCapacity = getRandomGroupCapacity();
 
-        final int maxCapacity = faker.number().numberBetween(2, 64);
+        final Faker faker = new Faker();
 
         return Group.of(faker.lorem().sentence(), faker.lorem().sentence(20),
             maxCapacity, GroupStatus.ACTIVE);
+    }
+
+    /**
+     * Generates a random group capacity following multiples of 10 from 10 to 100.
+     *
+     * @return a random group capacity
+     */
+    private static int getRandomGroupCapacity() {
+        final int min = 1;
+        final int max = 100;
+
+        return RANDOM.nextInt((max - min) + 1) + min;
     }
 }

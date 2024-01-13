@@ -33,7 +33,7 @@ public class CharacterEntity {
         final int min = 1;
         final int max = 15;
 
-        final int randomNum = RANDOM.nextInt(max - min) + min; // range of 1 (inclusive) to 15 (exclusive)
+        final int randomNum = RANDOM.nextInt(max - min) + min; // range of min (inclusive) to max (exclusive)
 
         return getCharacter(randomNum);
     }
