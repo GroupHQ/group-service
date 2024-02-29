@@ -3,8 +3,10 @@ package org.grouphq.groupservice.group.demo;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.config.GroupProperties;
@@ -16,6 +18,7 @@ import org.grouphq.groupservice.group.domain.members.MemberEventService;
 import org.grouphq.groupservice.group.event.daos.requestevent.GroupCreateRequestEvent;
 import org.grouphq.groupservice.group.event.daos.requestevent.GroupJoinRequestEvent;
 import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequestEvent;
+import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import org.springframework.scheduling.annotation.Scheduled;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,6 +38,8 @@ public class GroupDemoLoader {
     private boolean initialStateLoaded;
 
     private final GroupGeneratorService generateGroupPostingService;
+
+    private final CharacterGeneratorService characterGeneratorService;
 
     private final GroupService groupService;
 
@@ -67,7 +72,7 @@ public class GroupDemoLoader {
                 return groupEventService.createGroup(groupCreateRequestEvent)
                     .flatMap(group -> {
                         final GroupJoinRequestEvent groupJoinRequestEvent = new GroupJoinRequestEvent(
-                            UUID.randomUUID(), group.id(), characterEntity.getName(),
+                            UUID.randomUUID(), group.id(), characterEntity.name(),
                             UUID.randomUUID().toString(), Instant.now());
 
                         return memberEventService.joinGroup(groupJoinRequestEvent)
@@ -89,7 +94,7 @@ public class GroupDemoLoader {
 
     private Flux<Tuple2<GroupCreateRequestEvent, CharacterEntity>> generateCreateGroupEvents(int groupsToAdd) {
         return Flux.range(0, groupsToAdd)
-            .flatMap(i -> generateGroupPostingService.generateGroup(CharacterEntity.createRandomCharacter()))
+            .flatMap(i -> generateGroupPostingService.generateGroup(characterGeneratorService.createRandomCharacter()))
             .map(groupCharacterTuple2 -> {
                 final Group group = groupCharacterTuple2.getT1();
                 final CharacterEntity characterEntity = groupCharacterTuple2.getT2();
@@ -144,7 +149,7 @@ public class GroupDemoLoader {
         return groupService.findActiveGroupsWithMembers()
             .flatMap(group -> {
                 if (group.members().size() < group.maxGroupSize()) {
-                    return createGroupJoinEvent(group.id())
+                    return createGroupJoinEvent(group.id(), group.members())
                         .flatMap(groupJoinRequestEvent ->
                             randomDelay(memberJoinMaxDelay)
                                 .then(joinGroup(group.id(), groupJoinRequestEvent))
@@ -155,12 +160,14 @@ public class GroupDemoLoader {
             });
     }
 
-    private Mono<GroupJoinRequestEvent> createGroupJoinEvent(Long groupId) {
-        final CharacterEntity characterEntity = CharacterEntity.createRandomCharacter();
+    private Mono<GroupJoinRequestEvent> createGroupJoinEvent(Long groupId, Set<PublicMember> members) {
+        final Stream<String> memberNames = members.stream().map(PublicMember::username);
+        final CharacterEntity uniqueCharacterEntity =
+            characterGeneratorService.createRandomAndUniqueCharacter(memberNames);
 
         return Mono.just(
             new GroupJoinRequestEvent(
-                UUID.randomUUID(), groupId, characterEntity.getName(),
+                UUID.randomUUID(), groupId, uniqueCharacterEntity.name(),
                 UUID.randomUUID().toString(), Instant.now())
         );
     }

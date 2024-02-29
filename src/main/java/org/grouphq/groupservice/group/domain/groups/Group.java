@@ -1,7 +1,10 @@
 package org.grouphq.groupservice.group.domain.groups;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import org.grouphq.groupservice.group.domain.outbox.EventDataModel;
 import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -56,8 +59,8 @@ public record Group(
         int version,
 
         @Transient
-        List<PublicMember> members
-) {
+        Set<PublicMember> members
+) implements EventDataModel {
     // We can't use the record's default constructor because Spring Data JDBC
     // will complain about the @Transient members property.
     // As of now, we'll use the @PersistenceCreator annotation to tell Spring Data JDBC to use
@@ -74,7 +77,7 @@ public record Group(
                            int version) {
         return new Group(id, title, description, maxGroupSize, status, lastMemberActivity,
             createdDate, lastModifiedDate, createdBy, lastModifiedBy,
-            version, List.of());
+            version, Set.of());
     }
 
 
@@ -148,7 +151,7 @@ public record Group(
             this.createdBy(),
             this.lastModifiedBy(),
             this.version(),
-            members
+            new HashSet<>(members)
         );
     }
 }

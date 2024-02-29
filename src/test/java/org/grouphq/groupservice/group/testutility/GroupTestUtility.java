@@ -1,8 +1,12 @@
 package org.grouphq.groupservice.group.testutility;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.javafaker.Faker;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.members.Member;
@@ -19,10 +23,17 @@ import org.grouphq.groupservice.group.event.daos.requestevent.GroupStatusRequest
 /**
  * Utility class for common functionality needed by multiple tests.
  */
+@Slf4j
 public final class GroupTestUtility {
 
-    public static final Faker FAKER = new Faker();
+    private static final ObjectMapper OBJECT_MAPPER;
+    private static final Faker FAKER = new Faker();
     static final String OWNER = "system";
+
+    static {
+        OBJECT_MAPPER = new ObjectMapper();
+        OBJECT_MAPPER.registerModule(new JavaTimeModule());
+    }
 
     private GroupTestUtility() {}
 
@@ -353,6 +364,15 @@ public final class GroupTestUtility {
      * @return an OutboxEvent object with all details.
      */
     public static OutboxEvent generateOutboxEvent() {
+        String eventData;
+
+        try {
+            eventData =
+                OBJECT_MAPPER.writeValueAsString(GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE));
+        } catch (JsonProcessingException exception) {
+            log.warn("Could not generate group for event data, falling back to default", exception);
+            eventData = "{\"status\": \"ACTIVE\"}";
+        }
 
         return new OutboxEvent(
             UUID.randomUUID(),
@@ -360,7 +380,7 @@ public final class GroupTestUtility {
             UUID.randomUUID().toString(),
             AggregateType.GROUP,
             EventType.GROUP_CREATED,
-            "{\"status\": \"ACTIVE\"}",
+            eventData,
             EventStatus.SUCCESSFUL,
             Instant.now()
         );

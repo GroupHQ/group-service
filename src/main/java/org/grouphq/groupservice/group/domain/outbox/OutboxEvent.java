@@ -49,5 +49,4 @@ public class OutboxEvent {
         return new OutboxEvent(eventId, aggregateId, websocketId, aggregateType,
             eventType, eventData, eventStatus, Instant.now());
     }
-
 }

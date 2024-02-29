@@ -10,6 +10,8 @@ server:
     connection-timeout: 2s
     idle-timeout: 15s
 group:
+  character-generator:
+    unique-attempts: 1000
   loader:
     enabled: false
     group-service-jobs:

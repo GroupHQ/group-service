@@ -16,7 +16,7 @@ import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import org.grouphq.groupservice.group.domain.outbox.ErrorData;
-import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
+import org.grouphq.groupservice.group.domain.outbox.OutboxEventJson;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
@@ -97,9 +97,9 @@ class GroupEventGroupIntegrationTest {
             POSTGRESQL_CONTAINER.getDatabaseName());
     }
 
-    private OutboxEvent receiveEvent(EventType eventTypeToReceive) {
+    private OutboxEventJson receiveEvent(EventType eventTypeToReceive) {
         EventType eventType = null;
-        OutboxEvent outboxEvent = null;
+        OutboxEventJson outboxEvent = null;
 
         while (eventType != eventTypeToReceive) {
             final Message<byte[]> payload = outputDestination.receive(2500, eventPublisherDestination);
@@ -111,9 +111,9 @@ class GroupEventGroupIntegrationTest {
 
             assert payload != null;
             try {
-                outboxEvent = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+                outboxEvent = objectMapper.readValue(payload.getPayload(), OutboxEventJson.class);
             } catch (IOException e) {
-                fail("Failed to read payload as OutboxEvent: ", e);
+                fail("Failed to read payload as OutboxEventJson: ", e);
             }
 
             assert outboxEvent != null;
@@ -123,18 +123,18 @@ class GroupEventGroupIntegrationTest {
         return outboxEvent;
     }
 
-    private List<OutboxEvent> collectEvents() {
-        OutboxEvent event;
-        final List<OutboxEvent> events = new ArrayList<>();
+    private List<OutboxEventJson> collectEvents() {
+        OutboxEventJson event;
+        final List<OutboxEventJson> events = new ArrayList<>();
 
         Message<byte[]> payload = outputDestination.receive(1000, eventPublisherDestination);
 
         while (payload != null) {
             try {
-                event = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+                event = objectMapper.readValue(payload.getPayload(), OutboxEventJson.class);
                 events.add(event);
             } catch (IOException e) {
-                fail("Failed to read payload as OutboxEvent: ", e);
+                fail("Failed to read payload as OutboxEventJson: ", e);
             }
 
             payload = outputDestination.receive(1000, eventPublisherDestination);
@@ -155,15 +155,14 @@ class GroupEventGroupIntegrationTest {
             GroupTestUtility.generateGroupCreateRequestEvent();
 
         inputDestination.send(new GenericMessage<>(requestEvent), createHandlerDestination);
-        final OutboxEvent event = receiveEvent(EventType.GROUP_CREATED);
+        final OutboxEventJson event = receiveEvent(EventType.GROUP_CREATED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
             actual -> assertThat(actual.getAggregateId()).isNotNull(),
             actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
             actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_CREATED),
-            actual -> assertThat(objectMapper.readValue(actual.getEventData(), Group.class))
-                .isInstanceOf(Group.class),
+            actual -> assertThat(actual.getEventData()).isExactlyInstanceOf(Group.class),
             actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
         );
@@ -184,9 +183,11 @@ class GroupEventGroupIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(requestEvent), createHandlerDestination);
 
-        final OutboxEvent event = receiveEvent(EventType.GROUP_CREATED);
+        final OutboxEventJson event = receiveEvent(EventType.GROUP_CREATED);
 
-        final ErrorData errorData = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+
+        final ErrorData errorData = (ErrorData) event.getEventData();
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -211,15 +212,15 @@ class GroupEventGroupIntegrationTest {
             GroupTestUtility.generateGroupStatusRequestEvent(group.id(), GroupStatus.AUTO_DISBANDED);
 
         inputDestination.send(new GenericMessage<>(requestEvent), updateStatusHandlerDestination);
-        final OutboxEvent event = receiveEvent(EventType.GROUP_UPDATED);
+        final OutboxEventJson event = receiveEvent(EventType.GROUP_UPDATED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
             actual -> assertThat(actual.getAggregateId()).isEqualTo(requestEvent.getAggregateId()),
             actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
             actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_UPDATED),
-            actual -> assertThat(objectMapper.readValue(actual.getEventData(), Group.class).status())
-                .isEqualTo(GroupStatus.AUTO_DISBANDED),
+            actual -> assertThat(actual.getEventData()).isExactlyInstanceOf(Group.class),
+            actual -> assertThat(((Group) actual.getEventData()).status()).isEqualTo(GroupStatus.AUTO_DISBANDED),
             actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
         );
@@ -249,14 +250,14 @@ class GroupEventGroupIntegrationTest {
                 .allMatch(member -> member.memberStatus().equals(MemberStatus.AUTO_LEFT)))
             .verifyComplete();
 
-        final List<OutboxEvent> events = collectEvents();
+        final List<OutboxEventJson> events = collectEvents();
 
         assertThat(events).hasSize(1);
         assertThat(events).allSatisfy(event -> {
             assertThat(event.getEventType()).isEqualTo(EventType.GROUP_UPDATED);
             assertThat(event.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL);
-            assertThat(objectMapper.readValue(event.getEventData(), Group.class).status())
-                .isEqualTo(GroupStatus.AUTO_DISBANDED);
+            assertThat(event.getEventData()).isExactlyInstanceOf(Group.class);
+            assertThat(((Group) event.getEventData()).status()).isEqualTo(GroupStatus.AUTO_DISBANDED);
         });
     }
 
@@ -271,14 +272,15 @@ class GroupEventGroupIntegrationTest {
             GroupTestUtility.generateGroupStatusRequestEvent(group.id(), GroupStatus.AUTO_DISBANDED);
 
         inputDestination.send(new GenericMessage<>(requestEvent), updateStatusHandlerDestination);
-        final OutboxEvent event = receiveEvent(EventType.GROUP_UPDATED);
+        final OutboxEventJson event = receiveEvent(EventType.GROUP_UPDATED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
             actual -> assertThat(actual.getAggregateId()).isEqualTo(requestEvent.getAggregateId()),
             actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
             actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_UPDATED),
-            actual -> assertThat(objectMapper.readValue(actual.getEventData(), Group.class).lastModifiedDate())
+            actual -> assertThat(actual.getEventData()).isExactlyInstanceOf(Group.class),
+            actual -> assertThat(((Group) actual.getEventData()).lastModifiedDate())
                 .isBetween(testStartTime, Instant.now()),
             actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
@@ -293,9 +295,11 @@ class GroupEventGroupIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(requestEvent), updateStatusHandlerDestination);
 
-        final OutboxEvent event = receiveEvent(EventType.GROUP_UPDATED);
+        final OutboxEventJson event = receiveEvent(EventType.GROUP_UPDATED);
 
-        final ErrorData errorData = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+
+        final ErrorData errorData = (ErrorData) event.getEventData();
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -318,9 +322,11 @@ class GroupEventGroupIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(requestEvent), createHandlerDestination);
 
-        final OutboxEvent event = receiveEvent(EventType.GROUP_CREATED);
+        final OutboxEventJson event = receiveEvent(EventType.GROUP_CREATED);
 
-        final ErrorData errorData = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+
+        final ErrorData errorData = (ErrorData) event.getEventData();
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),

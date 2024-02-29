@@ -2,6 +2,7 @@ package org.grouphq.groupservice.group.domain.members;
 
 import java.time.Instant;
 import java.util.UUID;
+import org.grouphq.groupservice.group.domain.outbox.EventDataModel;
 import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -52,7 +53,7 @@ public record Member(
 
     @Version
     int version
-) {
+) implements EventDataModel {
     public static Member of(String username, Long groupId) {
         return new Member(null, UUID.randomUUID(), username, groupId, MemberStatus.ACTIVE, null,
             null, null, null, null, 0);

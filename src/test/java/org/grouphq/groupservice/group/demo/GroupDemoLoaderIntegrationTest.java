@@ -53,6 +53,9 @@ class GroupDemoLoaderIntegrationTest {
     private GroupGeneratorService groupGeneratorService;
 
     @Autowired
+    private CharacterGeneratorService characterGeneratorService;
+
+    @Autowired
     private GroupRepository groupRepository;
 
     @Autowired
@@ -89,8 +92,8 @@ class GroupDemoLoaderIntegrationTest {
     @BeforeEach
     void clearRepositories() {
         this.groupDemoLoader =
-            new GroupDemoLoader(groupProperties, groupGeneratorService, groupService,
-                groupEventService, memberEventService);
+            new GroupDemoLoader(groupProperties, groupGeneratorService, characterGeneratorService,
+                groupService, groupEventService, memberEventService);
         StepVerifier.create(memberRepository.deleteAll().thenMany(groupRepository.deleteAll()))
             .expectComplete()
             .verify(Duration.ofSeconds(1));

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import org.grouphq.groupservice.config.GroupProperties;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupEventService;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -41,6 +43,10 @@ class GroupDemoLoaderTest {
 
     @Mock
     private GroupGeneratorService groupGeneratorService;
+
+    @Spy
+    private final CharacterGeneratorService characterGeneratorService =
+        new CharacterGeneratorService(new GroupProperties());
 
     @Mock
     private GroupEventService groupEventService;

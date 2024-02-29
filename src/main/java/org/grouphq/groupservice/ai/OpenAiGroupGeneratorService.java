@@ -106,7 +106,7 @@ public class OpenAiGroupGeneratorService {
     }
 
     private String groupHqGroupPublisher(CharacterEntity characterEntity) {
-        return "You are taking the persona of " + characterEntity.getName() + " from " +  characterEntity.getUniverse();
+        return "You are taking the persona of " + characterEntity.name() + " from " +  characterEntity.universe();
     }
 
     private String groupHqGroupPrompt() {
