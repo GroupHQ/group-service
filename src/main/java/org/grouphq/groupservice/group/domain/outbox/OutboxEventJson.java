@@ -1,6 +1,5 @@
 package org.grouphq.groupservice.group.domain.outbox;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Instant;
@@ -45,15 +44,9 @@ public class OutboxEventJson {
     }
 
     public static Mono<OutboxEventJson> copy(OutboxEvent outboxEvent) {
-        try {
-            final EventDataModel eventDataModel =
-                OBJECT_MAPPER.readValue(outboxEvent.getEventData(), EventDataModel.class);
-            return Mono.just(copy(outboxEvent, eventDataModel));
-        } catch (JsonProcessingException jsonProcessingException) {
-            log.error("Could not convert event data from string to EventDataModel for event {}",
-                outboxEvent, jsonProcessingException);
-            return Mono.error(jsonProcessingException);
-        }
+        final EventDataModel eventDataModel =
+            outboxEvent.getEventData();
+        return Mono.just(copy(outboxEvent, eventDataModel));
     }
 
     public static OutboxEventJson copy(OutboxEvent outboxEvent, EventDataModel eventDataModel) {

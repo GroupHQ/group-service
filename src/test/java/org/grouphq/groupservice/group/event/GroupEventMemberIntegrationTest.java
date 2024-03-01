@@ -3,11 +3,9 @@ package org.grouphq.groupservice.group.event;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
@@ -145,7 +143,7 @@ class GroupEventMemberIntegrationTest {
 
     @Test
     @DisplayName("Processes a group join request successfully")
-    void successfullyJoinsGroup() throws IOException {
+    void successfullyJoinsGroup() {
         saveGroup(Group.of(GROUP, DESCRIPTION,
             10, GroupStatus.ACTIVE));
 
@@ -165,7 +163,7 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that member has the appropriate identifying values
-        final Member member = objectMapper.readValue(event.getEventData(), Member.class);
+        final Member member = (Member) event.getEventData();
         assertMemberEqualsExpectedProperties(member, requestEvent, MemberStatus.ACTIVE);
 
         // Verify this member was saved to the database
@@ -204,7 +202,7 @@ class GroupEventMemberIntegrationTest {
 
     @Test
     @DisplayName("Unsuccessfully joins group because its not active")
-    void unsuccessfullyJoinsGroupBecauseItsNotActive() throws IOException {
+    void unsuccessfullyJoinsGroupBecauseItsNotActive() {
         saveGroup(Group.of(GROUP, DESCRIPTION,
             10, GroupStatus.AUTO_DISBANDED));
 
@@ -225,7 +223,7 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that event data maps to an error
-        final ErrorData error = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        final ErrorData error = (ErrorData) event.getEventData();
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
@@ -235,7 +233,7 @@ class GroupEventMemberIntegrationTest {
 
     @Test
     @DisplayName("Unsuccessfully joins group because it does not exist")
-    void unsuccessfullyJoinsGroupBecauseItDoesNotExist() throws IOException {
+    void unsuccessfullyJoinsGroupBecauseItDoesNotExist() {
         final GroupJoinRequestEvent requestEvent =
             GroupTestUtility.generateGroupJoinRequestEvent(10_000L);
 
@@ -253,7 +251,7 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that event data maps to an error
-        final ErrorData error = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        final ErrorData error = (ErrorData) event.getEventData();
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
@@ -263,7 +261,7 @@ class GroupEventMemberIntegrationTest {
 
     @Test
     @DisplayName("Unsuccessfully joins group because its full")
-    void unsuccessfullyJoinsGroupBecauseItsFull() throws IOException {
+    void unsuccessfullyJoinsGroupBecauseItsFull() {
         saveGroup(GroupTestUtility.generateFullGroupDetails(2, GroupStatus.ACTIVE));
         inputDestination.send(
             new GenericMessage<>(GroupTestUtility.generateGroupJoinRequestEvent(group.id())), joinHandlerDestination);
@@ -290,7 +288,7 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that event data maps to an error
-        final ErrorData error = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        final ErrorData error = (ErrorData) event.getEventData();
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
@@ -300,7 +298,7 @@ class GroupEventMemberIntegrationTest {
 
     @Test
     @DisplayName("Successfully leaves group")
-    void successfullyLeavesGroup() throws IOException {
+    void successfullyLeavesGroup() {
         saveGroup(Group.of(GROUP, DESCRIPTION, 10, GroupStatus.ACTIVE));
 
         final GroupJoinRequestEvent joinRequestEvent =
@@ -309,10 +307,7 @@ class GroupEventMemberIntegrationTest {
         inputDestination.send(new GenericMessage<>(joinRequestEvent), joinHandlerDestination);
 
         OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
-        final Map<String, Object> memberData = objectMapper.readValue(event.getEventData(),
-            new TypeReference<>() {});
-        final Integer memberIdInt = (Integer) memberData.get("id");
-        final Long memberId = memberIdInt.longValue();
+        final Long memberId = ((Member) event.getEventData()).id();
 
         final GroupLeaveRequestEvent leaveRequestEvent =
             GroupTestUtility.generateGroupLeaveRequestEvent(
@@ -346,7 +341,7 @@ class GroupEventMemberIntegrationTest {
 
     @Test
     @DisplayName("Sends out a group updated event when a member leaves a group")
-    void sendsOutGroupUpdatedEventWhenMemberLeavesGroup() throws IOException {
+    void sendsOutGroupUpdatedEventWhenMemberLeavesGroup() {
         saveGroup(Group.of(GROUP, DESCRIPTION, 10, GroupStatus.ACTIVE));
 
         final GroupJoinRequestEvent joinRequestEvent =
@@ -355,11 +350,7 @@ class GroupEventMemberIntegrationTest {
         inputDestination.send(new GenericMessage<>(joinRequestEvent), joinHandlerDestination);
 
         final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
-        final Map<String, Object> memberData = objectMapper.readValue(event.getEventData(),
-            new TypeReference<>() {
-            });
-        final Integer memberIdInt = (Integer) memberData.get("id");
-        final Long memberId = memberIdInt.longValue();
+        final Long memberId = ((Member) event.getEventData()).id();
 
         final GroupLeaveRequestEvent leaveRequestEvent =
             GroupTestUtility.generateGroupLeaveRequestEvent(
@@ -385,7 +376,7 @@ class GroupEventMemberIntegrationTest {
 
     @Test
     @DisplayName("Unsuccessfully leaves group because group does not exist")
-    void unsuccessfullyLeavesGroup() throws IOException {
+    void unsuccessfullyLeavesGroup() {
         final GroupLeaveRequestEvent leaveRequestEvent =
             GroupTestUtility.generateGroupLeaveRequestEvent(10_000L, 10_000L);
 
@@ -408,7 +399,7 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that event data maps to an error
-        final ErrorData error = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        final ErrorData error = (ErrorData) event.getEventData();
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())

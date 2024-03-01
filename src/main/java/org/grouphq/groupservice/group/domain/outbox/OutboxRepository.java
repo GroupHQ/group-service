@@ -30,7 +30,7 @@ public interface OutboxRepository extends ReactiveCrudRepository<OutboxEvent, UU
         @Param("aggregateId") Long aggregateId,
         @Param("aggregateType") AggregateType aggregateType,
         @Param("eventType") EventType eventType,
-        @Param("eventData") String eventData,  // assuming the event data is serialized to a string
+        @Param("eventData") EventDataModel eventData,  // assuming the event data is serialized to a string
         @Param("eventStatus") EventStatus eventStatus,
         @Param("websocketId") String websocketId,
         @Param("createdDate") Instant createdDate

@@ -1,6 +1,5 @@
 package org.grouphq.groupservice.group.testutility;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.javafaker.Faker;
@@ -11,6 +10,7 @@ import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.members.Member;
 import org.grouphq.groupservice.group.domain.members.MemberStatus;
+import org.grouphq.groupservice.group.domain.outbox.EventDataModel;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
@@ -364,15 +364,7 @@ public final class GroupTestUtility {
      * @return an OutboxEvent object with all details.
      */
     public static OutboxEvent generateOutboxEvent() {
-        String eventData;
-
-        try {
-            eventData =
-                OBJECT_MAPPER.writeValueAsString(GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE));
-        } catch (JsonProcessingException exception) {
-            log.warn("Could not generate group for event data, falling back to default", exception);
-            eventData = "{\"status\": \"ACTIVE\"}";
-        }
+        final EventDataModel eventData = GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE);
 
         return new OutboxEvent(
             UUID.randomUUID(),
