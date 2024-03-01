@@ -1,6 +1,5 @@
 package org.grouphq.groupservice.group.domain.outbox;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.exceptions.EventAlreadyPublishedException;
@@ -36,8 +35,6 @@ import reactor.core.publisher.Mono;
 public class OutboxService {
 
     private final OutboxRepository outboxRepository;
-
-    private final ObjectMapper objectMapper;
 
     public Flux<OutboxEvent> getOutboxEvents() {
         return outboxRepository.findAllOrderByCreatedDateAsc();

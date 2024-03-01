@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
@@ -60,7 +59,7 @@ class OutboxServiceTest {
 
     @Test
     @DisplayName("Saves an event to the database")
-    void saveOutboxEvent() throws JsonProcessingException {
+    void saveOutboxEvent() {
         final Member member = GroupTestUtility.generateFullMemberDetails("User", 1L);
 
         final OutboxEvent outboxEvent = OutboxEvent.of(
