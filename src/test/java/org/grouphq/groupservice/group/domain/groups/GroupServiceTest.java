@@ -205,8 +205,8 @@ class GroupServiceTest {
                         groupService.findGroupByIdWithActiveMembers(member.groupId()))
             )
             .assertNext(group -> {
-                final PublicMember member = group.members().get(0);
-                assertThat(member).isNotNull();
+                assertThat(group.members().iterator().hasNext()).isTrue();
+                final PublicMember member = group.members().iterator().next();
                 assertThat(member.joinedDate()).isBetween(testStartTime, Instant.now());
             })
             .verifyComplete();

@@ -2,7 +2,9 @@ package org.grouphq.groupservice.group.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javafaker.Faker;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
 import org.grouphq.groupservice.config.DataConfig;
@@ -14,6 +16,8 @@ import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
 import org.grouphq.groupservice.group.domain.members.Member;
 import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
+import org.grouphq.groupservice.group.web.objects.egress.PublicOutboxEvent;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -29,6 +33,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @SpringBootTest
@@ -37,6 +42,8 @@ import reactor.test.StepVerifier;
 @Testcontainers
 @Tag("IntegrationTest")
 class GroupControllerIntegrationTest {
+
+    private static final Faker FAKER = new Faker();
 
     @Autowired
     private GroupService groupService;
@@ -63,6 +70,17 @@ class GroupControllerIntegrationTest {
         return String.format("r2dbc:postgresql://%s:%s/%s", POSTGRESQL_CONTAINER.getHost(),
             POSTGRESQL_CONTAINER.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT),
             POSTGRESQL_CONTAINER.getDatabaseName());
+    }
+
+    @BeforeEach
+    void clearGroups() {
+        StepVerifier.create(
+            groupService.findActiveGroups()
+                .flatMap(group -> groupService.updateStatus(group.id(), GroupStatus.AUTO_DISBANDED))
+                .collectList()
+            )
+            .expectNextCount(1)
+            .verifyComplete();
     }
 
     @Test
@@ -151,6 +169,66 @@ class GroupControllerIntegrationTest {
             .exchange()
             .expectStatus().isUnauthorized()
             .expectBody().isEmpty();
+    }
+
+    @Test
+    @DisplayName("When there are active groups, then return a list of active groups as public events")
+    void returnActiveGroupsAsPublicEvents() {
+        final Group[] groups = {
+            GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE),
+            GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE),
+            GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE),
+            GroupTestUtility.generateFullGroupDetails(GroupStatus.AUTO_DISBANDED)
+        };
+
+        StepVerifier.create(
+                groupRepository.saveAll(Flux.just(groups))
+                    .flatMap(group -> {
+                        if (group.status().equals(GroupStatus.ACTIVE)) {
+                            return groupService.addMember(group.id(), FAKER.name().firstName(),
+                                UUID.randomUUID().toString());
+                        } else {
+                            return Mono.empty();
+                        }
+                    })
+            )
+            .expectNextCount(Arrays.stream(groups).filter(group -> group.status().equals(GroupStatus.ACTIVE)).count())
+            .verifyComplete();
+
+        webTestClient
+            .get()
+            .uri("/api/groups/events")
+            .exchange()
+            .expectStatus().is2xxSuccessful()
+            .expectBodyList(PublicOutboxEvent.class).value(retrievedGroups -> {
+                assertThat(retrievedGroups).isNotEmpty();
+                assertThat(retrievedGroups).allSatisfy(publicOutboxEvent -> {
+                    assertThat(publicOutboxEvent.eventData()).isExactlyInstanceOf(Group.class);
+
+                    final Group group = (Group) publicOutboxEvent.eventData();
+                    assertThat(group.status()).isEqualTo(GroupStatus.ACTIVE);
+                    assertThat(group.members().size()).isGreaterThan(0);
+                });
+            });
+    }
+
+    @Test
+    @DisplayName("When there are no active groups, then return an empty list of events")
+    void returnAnEmptyListOfEventsWhenNoActiveGroups() {
+        final Group[] groups = {
+            GroupTestUtility.generateFullGroupDetails(GroupStatus.AUTO_DISBANDED)
+        };
+
+        StepVerifier.create(groupRepository.saveAll(Flux.just(groups)))
+            .expectNextCount(groups.length)
+            .verifyComplete();
+
+        webTestClient
+            .get()
+            .uri("/api/groups/events")
+            .exchange()
+            .expectStatus().is2xxSuccessful()
+            .expectBodyList(PublicOutboxEvent.class).value(retrievedGroups -> assertThat(retrievedGroups).isEmpty());
     }
 
 

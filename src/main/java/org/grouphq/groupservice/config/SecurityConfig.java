@@ -28,6 +28,7 @@ public class SecurityConfig {
             .authorizeExchange(authorizeExchangeSpec -> authorizeExchangeSpec
                 .pathMatchers("/actuator/**").permitAll()
                 .pathMatchers("/api/groups").permitAll()
+                .pathMatchers("/api/groups/events").permitAll()
                 .anyExchange().authenticated())
             .httpBasic(Customizer.withDefaults())
             .csrf(csrf -> csrf.csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse()))

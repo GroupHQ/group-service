@@ -43,14 +43,12 @@ public class GroupGeneratorService {
     }
 
     /**
-     * Generates a random group capacity following multiples of 10 from 10 to 100.
+     * Generates a random group capacity following multiples of 10 from 10 to 100 (inclusive).
      *
      * @return a random group capacity
      */
-    private static int getRandomGroupCapacity() {
-        final int min = 1;
-        final int max = 100;
-
-        return RANDOM.nextInt((max - min) + 1) + min;
+    public static int getRandomGroupCapacity() {
+        final int randomCapacity = RANDOM.nextInt(10) + 1;
+        return randomCapacity * 10;
     }
 }

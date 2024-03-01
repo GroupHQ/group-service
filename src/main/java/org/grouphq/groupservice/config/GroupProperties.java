@@ -14,10 +14,24 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "group")
 public class GroupProperties {
 
+    private CharacterGenerator characterGenerator = new CharacterGenerator();
     private Loader loader = new Loader();
 
     /**
+     * Configuration properties for the character generator service.
+     *
+     * @see org.grouphq.groupservice.group.demo.CharacterGeneratorService
+     */
+    @Getter
+    @Setter
+    public static class CharacterGenerator {
+        private int uniqueAttempts;
+    }
+
+    /**
      * Configuration properties for the group loader.
+     *
+     * @see org.grouphq.groupservice.group.demo.GroupDemoLoader
      */
     @Setter
     @Getter

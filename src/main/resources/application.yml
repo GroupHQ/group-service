@@ -10,6 +10,8 @@ server:
     connection-timeout: 2s
     idle-timeout: 15s
 group:
+  character-generator:
+    unique-attempts: 1000
   loader:
     enabled: false
     group-service-jobs:
@@ -72,7 +74,8 @@ spring:
         groupStatusRequests;
         groupJoinRequests;
         groupLeaveRequests;
-        processedEvents
+        processedEvents;
+        processedEventsTempGroup89
     stream:
       bindings:
         groupCreateRequests-in-0:
@@ -89,6 +92,8 @@ spring:
           group: ${spring.application.name}
         processedEvents-out-0:
           destination: group-event-results
+        processedEventsTempGroup89-out-0:
+          destination: group-event-results-temp-group-89
   integration:
     poller:
       fixed-delay: 50

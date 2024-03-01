@@ -11,9 +11,12 @@ import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.service.OpenAiService;
 import java.util.List;
 import org.assertj.core.api.Assertions;
+import org.grouphq.groupservice.config.GroupProperties;
 import org.grouphq.groupservice.config.OpenAiApiConfig;
 import org.grouphq.groupservice.group.demo.CharacterEntity;
+import org.grouphq.groupservice.group.demo.CharacterGeneratorService;
 import org.grouphq.groupservice.group.domain.groups.Group;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,19 +30,23 @@ import reactor.test.StepVerifier;
 @Tag("UnitTest")
 @ExtendWith(MockitoExtension.class)
 class OpenAiGroupGeneratorServiceTest {
+
+    private static final int MAX_GROUP_SIZE = 10;
+
     @Mock
     private OpenAiService openAiService;
 
     @Spy
     private OpenAiApiConfig openAiApiConfig;
 
+    @Spy
+    private final CharacterGeneratorService characterGeneratorService =
+        new CharacterGeneratorService(new GroupProperties());
+
     @InjectMocks
     private OpenAiGroupGeneratorService openAiGroupGeneratorService;
 
-    private static final CharacterEntity CHARACTER_ENTITY = CharacterEntity.createRandomCharacter();
-
-    private static final int MAX_GROUP_SIZE = 10;
-
+    private CharacterEntity characterEntity;
 
     private String sampleContent() {
         return "Title: " + sampleTitle()
@@ -52,6 +59,11 @@ class OpenAiGroupGeneratorServiceTest {
 
     private String sampleDescription() {
         return "Attention all aspiring heroes! ...";
+    }
+
+    @BeforeEach
+    void createCharacter() {
+        characterEntity = characterGeneratorService.createRandomCharacter();
     }
 
     @Test
@@ -72,7 +84,7 @@ class OpenAiGroupGeneratorServiceTest {
         given(openAiApiConfig.isEnabled()).willReturn(true);
         given(openAiService.createChatCompletion(any(ChatCompletionRequest.class))).willReturn(resultStub);
 
-        StepVerifier.create(openAiGroupGeneratorService.generateGroup(CHARACTER_ENTITY, MAX_GROUP_SIZE))
+        StepVerifier.create(openAiGroupGeneratorService.generateGroup(characterEntity, MAX_GROUP_SIZE))
             .assertNext(tuple -> {
                 Assertions.assertThat(tuple.getT1()).satisfies(group -> {
                     Assertions.assertThat(group).isInstanceOf(Group.class);
@@ -82,8 +94,8 @@ class OpenAiGroupGeneratorServiceTest {
                 });
                 Assertions.assertThat(tuple.getT2()).satisfies(returnedCharacter -> {
                     Assertions.assertThat(returnedCharacter).isInstanceOf(CharacterEntity.class);
-                    Assertions.assertThat(returnedCharacter.getName()).isEqualTo(CHARACTER_ENTITY.getName());
-                    Assertions.assertThat(returnedCharacter.getUniverse()).isEqualTo(CHARACTER_ENTITY.getUniverse());
+                    Assertions.assertThat(returnedCharacter.name()).isEqualTo(characterEntity.name());
+                    Assertions.assertThat(returnedCharacter.universe()).isEqualTo(characterEntity.universe());
                 });
             })
             .verifyComplete();

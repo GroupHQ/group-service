@@ -3,6 +3,9 @@ package org.grouphq.groupservice.group.event;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
@@ -29,7 +32,7 @@ class GroupEventPublisherTest {
 
     @Test
     @DisplayName("Retrieves messages from outbox, deletes them, then supplies them")
-    void retrieveDeleteThenPublishMessages() {
+    void retrieveDeleteThenPublishMessages() throws JsonProcessingException {
         final OutboxEvent[] outboxEvent = {
             GroupTestUtility.generateOutboxEvent(),
             GroupTestUtility.generateOutboxEvent(),
@@ -47,6 +50,9 @@ class GroupEventPublisherTest {
 
         given(outboxService.deleteEvent(outboxEvent[2]))
             .willReturn(Mono.just(outboxEvent[2]));
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
 
         StepVerifier.create(groupEventPublisher.processedEvents().get())
             .expectNext(outboxEvent[0])

@@ -12,8 +12,10 @@ import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.service.OpenAiService;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.Stream;
 import org.grouphq.groupservice.config.OpenAiApiConfig;
 import org.grouphq.groupservice.group.domain.groups.Group;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -43,7 +45,10 @@ class GroupGeneratorServiceTest {
     @Autowired
     private GroupGeneratorService groupGeneratorService;
 
-    private static final CharacterEntity CHARACTER_ENTITY = CharacterEntity.createRandomCharacter();
+    @Autowired
+    private CharacterGeneratorService characterGeneratorService;
+
+    private CharacterEntity characterEntity;
 
     @Container
     private static final PostgreSQLContainer<?> POSTGRESQL_CONTAINER =
@@ -77,6 +82,11 @@ class GroupGeneratorServiceTest {
         return "Attention all aspiring heroes! ...";
     }
 
+    @BeforeEach
+    void createCharacter() {
+        characterEntity = characterGeneratorService.createRandomCharacter();
+    }
+
     @Test
     @DisplayName("Generates a group posting based on given Character using OpenAI API")
     void testGenerateGroupPosting() {
@@ -95,7 +105,7 @@ class GroupGeneratorServiceTest {
         given(openAiApiConfig.isEnabled()).willReturn(true);
         given(openAiService.createChatCompletion(any(ChatCompletionRequest.class))).willReturn(resultStub);
 
-        StepVerifier.create(groupGeneratorService.generateGroup(CHARACTER_ENTITY))
+        StepVerifier.create(groupGeneratorService.generateGroup(characterEntity))
             .assertNext(tuple -> {
                 assertThat(tuple.getT1()).satisfies(group -> {
                     assertThat(group).isInstanceOf(Group.class);
@@ -104,8 +114,8 @@ class GroupGeneratorServiceTest {
                 });
                 assertThat(tuple.getT2()).satisfies(returnedCharacter -> {
                     assertThat(returnedCharacter).isInstanceOf(CharacterEntity.class);
-                    assertThat(returnedCharacter.getName()).isEqualTo(CHARACTER_ENTITY.getName());
-                    assertThat(returnedCharacter.getUniverse()).isEqualTo(CHARACTER_ENTITY.getUniverse());
+                    assertThat(returnedCharacter.name()).isEqualTo(characterEntity.name());
+                    assertThat(returnedCharacter.universe()).isEqualTo(characterEntity.universe());
                 });
             })
             .verifyComplete();
@@ -121,7 +131,7 @@ class GroupGeneratorServiceTest {
         final int maxDelay = openAiApiConfig.getRetryConfig().getMaxDelay();
         final int maxAttempts = openAiApiConfig.getRetryConfig().getMaxAttempts();
 
-        StepVerifier.withVirtualTime(() -> groupGeneratorService.generateGroup(CHARACTER_ENTITY))
+        StepVerifier.withVirtualTime(() -> groupGeneratorService.generateGroup(characterEntity))
             .thenAwait(Duration.ofMillis((long) maxDelay * maxAttempts))
             .assertNext(tuple -> {
                 assertThat(tuple.getT1()).satisfies(group -> {
@@ -133,10 +143,21 @@ class GroupGeneratorServiceTest {
                 });
                 assertThat(tuple.getT2()).satisfies(returnedCharacter -> {
                     assertThat(returnedCharacter).isInstanceOf(CharacterEntity.class);
-                    assertThat(returnedCharacter.getName()).isEqualTo(CHARACTER_ENTITY.getName());
-                    assertThat(returnedCharacter.getUniverse()).isEqualTo(CHARACTER_ENTITY.getUniverse());
+                    assertThat(returnedCharacter.name()).isEqualTo(characterEntity.name());
+                    assertThat(returnedCharacter.universe()).isEqualTo(characterEntity.universe());
                 });
             })
             .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Returns a group capacity greater than 0 and a multiple of 10")
+    void returnGroupCapacityGreaterThanZeroAndMultipleOfTen() {
+        Stream.iterate(0, i -> i < 100, i -> i + 1)
+            .forEach(i -> {
+                final int capacity = GroupGeneratorService.getRandomGroupCapacity();
+                assertThat(capacity).isGreaterThan(0);
+                assertThat(capacity % 10).isEqualTo(0);
+            });
     }
 }

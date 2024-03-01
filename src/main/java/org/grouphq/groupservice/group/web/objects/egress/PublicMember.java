@@ -2,6 +2,7 @@ package org.grouphq.groupservice.group.web.objects.egress;
 
 import java.time.Instant;
 import org.grouphq.groupservice.group.domain.members.MemberStatus;
+import org.grouphq.groupservice.group.domain.outbox.EventDataModel;
 
 /**
  * A data-access-object representing a member model containing
@@ -22,5 +23,5 @@ public record PublicMember(
     Instant joinedDate,
 
     Instant exitedDate
-) {
+) implements EventDataModel {
 }
