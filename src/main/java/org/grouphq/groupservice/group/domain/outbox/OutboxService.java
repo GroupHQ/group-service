@@ -67,7 +67,7 @@ public class OutboxService {
                 joinRequest.getAggregateId(),
                 AggregateType.GROUP,
                 EventType.MEMBER_JOINED,
-                objectMapper.writeValueAsString(member),
+                member,
                 EventStatus.SUCCESSFUL,
                 joinRequest.getWebsocketId()
             );
@@ -89,7 +89,7 @@ public class OutboxService {
                 joinRequest.getAggregateId(),
                 AggregateType.GROUP,
                 EventType.MEMBER_JOINED,
-                objectMapper.writeValueAsString(new ErrorData(failure.getMessage())),
+                new ErrorData(failure.getMessage()),
                 EventStatus.FAILED,
                 joinRequest.getWebsocketId()
             );
@@ -111,7 +111,7 @@ public class OutboxService {
                 leaveRequest.getAggregateId(),
                 AggregateType.GROUP,
                 EventType.MEMBER_LEFT,
-                objectMapper.writeValueAsString(member),
+                member,
                 EventStatus.SUCCESSFUL,
                 leaveRequest.getWebsocketId()
             );
@@ -133,7 +133,7 @@ public class OutboxService {
                 leaveRequest.getAggregateId(),
                 AggregateType.GROUP,
                 EventType.MEMBER_LEFT,
-                objectMapper.writeValueAsString(new ErrorData(failure.getMessage())),
+                new ErrorData(failure.getMessage()),
                 EventStatus.FAILED,
                 leaveRequest.getWebsocketId()
             );
@@ -155,7 +155,7 @@ public class OutboxService {
                 group.id(),
                 AggregateType.GROUP,
                 EventType.GROUP_CREATED,
-                objectMapper.writeValueAsString(group),
+                group,
                 EventStatus.SUCCESSFUL,
                 createRequest.getWebsocketId()
             );
@@ -177,7 +177,7 @@ public class OutboxService {
                 null,
                 AggregateType.GROUP,
                 EventType.GROUP_CREATED,
-                objectMapper.writeValueAsString(new ErrorData(failure.getMessage())),
+                new ErrorData(failure.getMessage()),
                 EventStatus.FAILED,
                 createRequest.getWebsocketId()
             );
@@ -198,7 +198,7 @@ public class OutboxService {
                 event.getAggregateId(),
                 AggregateType.GROUP,
                 EventType.GROUP_UPDATED,
-                objectMapper.writeValueAsString(group),
+                group,
                 EventStatus.SUCCESSFUL,
                 websocketId
             );
@@ -220,7 +220,7 @@ public class OutboxService {
                 statusRequest.getAggregateId(),
                 AggregateType.GROUP,
                 EventType.GROUP_UPDATED,
-                objectMapper.writeValueAsString(new ErrorData(failure.getMessage())),
+                new ErrorData(failure.getMessage()),
                 EventStatus.FAILED,
                 statusRequest.getWebsocketId()
             );

@@ -162,8 +162,7 @@ class GroupEventGroupIntegrationTest {
             actual -> assertThat(actual.getAggregateId()).isNotNull(),
             actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
             actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_CREATED),
-            actual -> assertThat(objectMapper.readValue(actual.getEventData(), Group.class))
-                .isInstanceOf(Group.class),
+            actual -> assertThat(actual.getEventData()).isInstanceOf(Group.class),
             actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
         );
@@ -177,7 +176,7 @@ class GroupEventGroupIntegrationTest {
 
     @Test
     @DisplayName("Unsuccessfully fulfills a group create request")
-    void createsGroupFailure() throws IOException {
+    void createsGroupFailure() {
         // Create request with invalid capacity of 1
         final GroupCreateRequestEvent requestEvent =
             GroupTestUtility.generateGroupCreateRequestEvent(1);
@@ -186,7 +185,8 @@ class GroupEventGroupIntegrationTest {
 
         final OutboxEvent event = receiveEvent(EventType.GROUP_CREATED);
 
-        final ErrorData errorData = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+        final ErrorData errorData = (ErrorData) event.getEventData();
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -218,8 +218,8 @@ class GroupEventGroupIntegrationTest {
             actual -> assertThat(actual.getAggregateId()).isEqualTo(requestEvent.getAggregateId()),
             actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
             actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_UPDATED),
-            actual -> assertThat(objectMapper.readValue(actual.getEventData(), Group.class).status())
-                .isEqualTo(GroupStatus.AUTO_DISBANDED),
+            actual -> assertThat(actual.getEventData()).isExactlyInstanceOf(Group.class),
+            actual -> assertThat(((Group) actual.getEventData()).status()).isEqualTo(GroupStatus.AUTO_DISBANDED),
             actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
         );
@@ -255,8 +255,8 @@ class GroupEventGroupIntegrationTest {
         assertThat(events).allSatisfy(event -> {
             assertThat(event.getEventType()).isEqualTo(EventType.GROUP_UPDATED);
             assertThat(event.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL);
-            assertThat(objectMapper.readValue(event.getEventData(), Group.class).status())
-                .isEqualTo(GroupStatus.AUTO_DISBANDED);
+            assertThat(event.getEventData()).isExactlyInstanceOf(Group.class);
+            assertThat(((Group) event.getEventData()).status()).isEqualTo(GroupStatus.AUTO_DISBANDED);
         });
     }
 
@@ -278,7 +278,8 @@ class GroupEventGroupIntegrationTest {
             actual -> assertThat(actual.getAggregateId()).isEqualTo(requestEvent.getAggregateId()),
             actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
             actual -> assertThat(actual.getEventType()).isEqualTo(EventType.GROUP_UPDATED),
-            actual -> assertThat(objectMapper.readValue(actual.getEventData(), Group.class).lastModifiedDate())
+            actual -> assertThat(actual.getEventData()).isExactlyInstanceOf(Group.class),
+            actual -> assertThat(((Group) actual.getEventData()).lastModifiedDate())
                 .isBetween(testStartTime, Instant.now()),
             actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
             actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
@@ -287,7 +288,7 @@ class GroupEventGroupIntegrationTest {
 
     @Test
     @DisplayName("Unsuccessfully fulfills a group update request for a group that does not exist")
-    void disbandsGroupFailure() throws IOException {
+    void disbandsGroupFailure() {
         final GroupStatusRequestEvent requestEvent =
             GroupTestUtility.generateGroupStatusRequestEvent(999L, GroupStatus.AUTO_DISBANDED);
 
@@ -295,7 +296,9 @@ class GroupEventGroupIntegrationTest {
 
         final OutboxEvent event = receiveEvent(EventType.GROUP_UPDATED);
 
-        final ErrorData errorData = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+
+        final ErrorData errorData = (ErrorData) event.getEventData();
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -312,7 +315,7 @@ class GroupEventGroupIntegrationTest {
 
     @Test
     @DisplayName("Check validations for group create request")
-    void checkValidationsForGroupCreateRequest() throws IOException {
+    void checkValidationsForGroupCreateRequest() {
         final GroupCreateRequestEvent requestEvent =
             GroupTestUtility.generateGroupCreateRequestEvent(0);
 
@@ -320,7 +323,9 @@ class GroupEventGroupIntegrationTest {
 
         final OutboxEvent event = receiveEvent(EventType.GROUP_CREATED);
 
-        final ErrorData errorData = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+
+        final ErrorData errorData = (ErrorData) event.getEventData();
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),

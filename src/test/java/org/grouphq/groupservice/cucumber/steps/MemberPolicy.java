@@ -112,9 +112,11 @@ public class MemberPolicy {
     @Then("I should be a member of the group")
     public void iShouldBeAMemberOfTheGroup() throws IOException {
         final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
-        if (event.getEventStatus().equals(EventStatus.SUCCESSFUL)) {
-            member = objectMapper.readValue(event.getEventData(), Member.class);
-        }
+
+        assertThat(event.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL);
+        assertThat(event.getEventData()).isExactlyInstanceOf(Member.class);
+
+        member = (Member) event.getEventData();
 
         assertThat(event).isNotNull();
         assertThat(event.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL);
@@ -143,7 +145,9 @@ public class MemberPolicy {
 
         sendEvent(requestEvent, joinHandlerDestination);
         final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
-        member = objectMapper.readValue(event.getEventData(), Member.class);
+
+        assertThat(event.getEventData()).isExactlyInstanceOf(Member.class);
+        member = (Member) event.getEventData();
     }
 
     @When("I try to leave the group")

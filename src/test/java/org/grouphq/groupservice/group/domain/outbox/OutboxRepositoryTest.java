@@ -1,8 +1,5 @@
 package org.grouphq.groupservice.group.domain.outbox;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -38,8 +35,6 @@ class OutboxRepositoryTest {
     @Autowired
     private OutboxRepository outboxRepository;
 
-    private final ObjectMapper objectMapper;
-
     @DynamicPropertySource
     private static void postgresqlProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.r2dbc.url", OutboxRepositoryTest::r2dbcUrl);
@@ -54,19 +49,14 @@ class OutboxRepositoryTest {
             POSTGRESQL_CONTAINER.getDatabaseName());
     }
 
-    public OutboxRepositoryTest() {
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
-    }
-
     @Test
     @DisplayName("Save outbox message to database")
-    void saveOutboxMessage() throws JsonProcessingException {
+    void saveOutboxMessage() {
         final Member member = GroupTestUtility.generateFullMemberDetails("User", 1L);
 
         final OutboxEvent result = OutboxEvent.of(
             UUID.randomUUID(), 1L, AggregateType.GROUP, EventType.MEMBER_JOINED,
-            objectMapper.writeValueAsString(member), EventStatus.SUCCESSFUL, "websocketId");
+            member, EventStatus.SUCCESSFUL, "websocketId");
 
         StepVerifier.create(
             outboxRepository.save(

@@ -65,7 +65,7 @@ class OutboxServiceTest {
 
         final OutboxEvent outboxEvent = OutboxEvent.of(
             UUID.randomUUID(), 1L, AggregateType.GROUP,
-            EventType.MEMBER_JOINED, objectMapper.writeValueAsString(member),
+            EventType.MEMBER_JOINED, member,
             EventStatus.SUCCESSFUL, "websocketId");
 
         given(outboxRepository.save(
@@ -137,7 +137,7 @@ class OutboxServiceTest {
     void deleteEvent() {
         final OutboxEvent outboxEvent = OutboxEvent.of(
             UUID.randomUUID(), 1L, AggregateType.GROUP,
-            EventType.MEMBER_JOINED, "eventData",
+            EventType.MEMBER_JOINED, GroupTestUtility.generateFullGroupDetails(GroupStatus.ACTIVE),
             EventStatus.SUCCESSFUL, "websocketId");
         given(outboxRepository.deleteById(outboxEvent.getEventId()))
             .willReturn(Mono.empty());
@@ -167,8 +167,8 @@ class OutboxServiceTest {
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
                     .isEqualTo(EventType.MEMBER_JOINED);
-                assertThat(objectMapper.readValue(event.getEventData(), Member.class))
-                    .isEqualTo(member);
+                assertThat(outboxEvent.getEventData()).isExactlyInstanceOf(Member.class);
+                assertThat((Member) outboxEvent.getEventData()).isEqualTo(member);
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.SUCCESSFUL);
                 assertThat(outboxEvent.getWebsocketId())
@@ -193,8 +193,8 @@ class OutboxServiceTest {
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
                     .isEqualTo(EventType.MEMBER_JOINED);
-                assertThat(objectMapper.readValue(event.getEventData(), ErrorData.class))
-                    .isEqualTo(new ErrorData(failure.getMessage()));
+                assertThat(outboxEvent.getEventData()).isExactlyInstanceOf(ErrorData.class);
+                assertThat((ErrorData) outboxEvent.getEventData()).isEqualTo(new ErrorData(failure.getMessage()));
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.FAILED);
                 assertThat(outboxEvent.getWebsocketId())
@@ -222,8 +222,8 @@ class OutboxServiceTest {
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
                     .isEqualTo(EventType.MEMBER_LEFT);
-                assertThat(objectMapper.readValue(outboxEvent.getEventData(), Member.class).id())
-                    .isEqualTo(member.id());
+                assertThat(outboxEvent.getEventData()).isExactlyInstanceOf(Member.class);
+                assertThat((Member) outboxEvent.getEventData()).isEqualTo(member);
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.SUCCESSFUL);
                 assertThat(outboxEvent.getWebsocketId())
@@ -249,8 +249,8 @@ class OutboxServiceTest {
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
                     .isEqualTo(EventType.MEMBER_LEFT);
-                assertThat(objectMapper.readValue(event.getEventData(), ErrorData.class))
-                    .isEqualTo(new ErrorData(failure.getMessage()));
+                assertThat(outboxEvent.getEventData()).isExactlyInstanceOf(ErrorData.class);
+                assertThat((ErrorData) outboxEvent.getEventData()).isEqualTo(new ErrorData(failure.getMessage()));
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.FAILED);
                 assertThat(outboxEvent.getWebsocketId())
@@ -276,8 +276,8 @@ class OutboxServiceTest {
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
                     .isEqualTo(EventType.GROUP_CREATED);
-                assertThat(objectMapper.readValue(outboxEvent.getEventData(), Group.class))
-                    .isEqualTo(group);
+                assertThat(outboxEvent.getEventData()).isExactlyInstanceOf(Group.class);
+                assertThat((Group) outboxEvent.getEventData()).isEqualTo(group);
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.SUCCESSFUL);
                 assertThat(outboxEvent.getWebsocketId())
@@ -302,8 +302,8 @@ class OutboxServiceTest {
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
                     .isEqualTo(EventType.GROUP_CREATED);
-                assertThat(objectMapper.readValue(event.getEventData(), ErrorData.class))
-                    .isEqualTo(new ErrorData(failure.getMessage()));
+                assertThat(outboxEvent.getEventData()).isExactlyInstanceOf(ErrorData.class);
+                assertThat((ErrorData) outboxEvent.getEventData()).isEqualTo(new ErrorData(failure.getMessage()));
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.FAILED);
                 assertThat(outboxEvent.getWebsocketId())
@@ -331,7 +331,8 @@ class OutboxServiceTest {
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
                     .isEqualTo(EventType.GROUP_UPDATED);
-                assertThat(objectMapper.readValue(outboxEvent.getEventData(), Group.class)).isEqualTo(group);
+                assertThat(outboxEvent.getEventData()).isExactlyInstanceOf(Group.class);
+                assertThat((Group) outboxEvent.getEventData()).isEqualTo(group);
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.SUCCESSFUL);
                 assertThat(outboxEvent.getWebsocketId())
@@ -357,8 +358,8 @@ class OutboxServiceTest {
                     .isEqualTo(AggregateType.GROUP);
                 assertThat(outboxEvent.getEventType())
                     .isEqualTo(EventType.GROUP_UPDATED);
-                assertThat(objectMapper.readValue(event.getEventData(), ErrorData.class))
-                    .isEqualTo(new ErrorData(failure.getMessage()));
+                assertThat(outboxEvent.getEventData()).isExactlyInstanceOf(ErrorData.class);
+                assertThat((ErrorData) outboxEvent.getEventData()).isEqualTo(new ErrorData(failure.getMessage()));
                 assertThat(outboxEvent.getEventStatus())
                     .isEqualTo(EventStatus.FAILED);
                 assertThat(outboxEvent.getWebsocketId())

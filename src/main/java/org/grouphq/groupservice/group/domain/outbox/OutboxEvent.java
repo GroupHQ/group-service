@@ -39,12 +39,12 @@ public class OutboxEvent {
     private final String websocketId;
     private final AggregateType aggregateType;
     private final EventType eventType;
-    private final String eventData;
+    private final EventDataModel eventData;
     private final EventStatus eventStatus;
     private final Instant createdDate;
 
     public static OutboxEvent of(UUID eventId, Long aggregateId, AggregateType aggregateType,
-                                 EventType eventType, String eventData, EventStatus eventStatus,
+                                 EventType eventType, EventDataModel eventData, EventStatus eventStatus,
                                  String websocketId) {
         return new OutboxEvent(eventId, aggregateId, websocketId, aggregateType,
             eventType, eventData, eventStatus, Instant.now());
