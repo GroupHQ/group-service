@@ -3,11 +3,9 @@ package org.grouphq.groupservice.group.event;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
@@ -16,7 +14,7 @@ import org.grouphq.groupservice.group.domain.members.Member;
 import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
 import org.grouphq.groupservice.group.domain.outbox.ErrorData;
-import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
+import org.grouphq.groupservice.group.domain.outbox.OutboxEventJson;
 import org.grouphq.groupservice.group.domain.outbox.enums.AggregateType;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventStatus;
 import org.grouphq.groupservice.group.domain.outbox.enums.EventType;
@@ -48,7 +46,7 @@ import reactor.test.StepVerifier;
 @Import(TestChannelBinderConfiguration.class)
 @Testcontainers
 @Tag("IntegrationTest")
-class GroupEventMemberIntegrationTest {
+class GroupEventMemberJsonIntegrationTest {
 
     private static final String GROUP = "Group";
     private static final String DESCRIPTION = "Description";
@@ -85,7 +83,7 @@ class GroupEventMemberIntegrationTest {
     @Value("${spring.cloud.stream.bindings.groupLeaveRequests-in-0.destination}")
     private String leaveHandlerDestination;
 
-    @Value("${spring.cloud.stream.bindings.processedEvents-out-0.destination}")
+    @Value("${spring.cloud.stream.bindings.processedEventsTempGroup89-out-0.destination}")
     private String eventPublisherDestination;
 
     @Container
@@ -94,7 +92,7 @@ class GroupEventMemberIntegrationTest {
 
     @DynamicPropertySource
     private static void postgresqlProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.r2dbc.url", GroupEventMemberIntegrationTest::r2dbcUrl);
+        registry.add("spring.r2dbc.url", GroupEventMemberJsonIntegrationTest::r2dbcUrl);
         registry.add("spring.r2dbc.username", POSTGRESQL_CONTAINER::getUsername);
         registry.add("spring.r2dbc.password", POSTGRESQL_CONTAINER::getPassword);
         registry.add("spring.flyway.url", POSTGRESQL_CONTAINER::getJdbcUrl);
@@ -118,9 +116,9 @@ class GroupEventMemberIntegrationTest {
         assertThat(eventPublisherDestination).isNotNull();
     }
 
-    private OutboxEvent receiveEvent(EventType eventTypeToReceive) {
+    private OutboxEventJson receiveEvent(EventType eventTypeToReceive) {
         EventType eventType = null;
-        OutboxEvent outboxEvent = null;
+        OutboxEventJson outboxEvent = null;
 
         while (eventType != eventTypeToReceive) {
             final Message<byte[]> payload = outputDestination.receive(2500, eventPublisherDestination);
@@ -131,9 +129,9 @@ class GroupEventMemberIntegrationTest {
 
             assert payload != null;
             try {
-                outboxEvent = objectMapper.readValue(payload.getPayload(), OutboxEvent.class);
+                outboxEvent = objectMapper.readValue(payload.getPayload(), OutboxEventJson.class);
             } catch (IOException e) {
-                fail("Failed to read payload as OutboxEvent: ", e);
+                fail("Failed to read payload as OutboxEventJson: ", e);
             }
 
             assert outboxEvent != null;
@@ -153,7 +151,7 @@ class GroupEventMemberIntegrationTest {
             GroupTestUtility.generateGroupJoinRequestEvent(group.id());
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
+        final OutboxEventJson event = receiveEvent(EventType.MEMBER_JOINED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -165,7 +163,10 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that member has the appropriate identifying values
-        final Member member = objectMapper.readValue(event.getEventData(), Member.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(Member.class);
+
+        final Member member = (Member) event.getEventData();
+
         assertMemberEqualsExpectedProperties(member, requestEvent, MemberStatus.ACTIVE);
 
         // Verify this member was saved to the database
@@ -186,7 +187,7 @@ class GroupEventMemberIntegrationTest {
             GroupTestUtility.generateGroupJoinRequestEvent(group.id());
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final OutboxEvent groupUpdatedEvent = receiveEvent(EventType.GROUP_UPDATED);
+        final OutboxEventJson groupUpdatedEvent = receiveEvent(EventType.GROUP_UPDATED);
 
         assertThat(groupUpdatedEvent).satisfies(
             actual -> assertThat(actual.getEventId()).isNotNull(),
@@ -213,7 +214,7 @@ class GroupEventMemberIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
+        final OutboxEventJson event = receiveEvent(EventType.MEMBER_JOINED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -225,7 +226,9 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that event data maps to an error
-        final ErrorData error = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+
+        final ErrorData error = (ErrorData) event.getEventData();
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
@@ -241,7 +244,7 @@ class GroupEventMemberIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
+        final OutboxEventJson event = receiveEvent(EventType.MEMBER_JOINED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -253,7 +256,9 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that event data maps to an error
-        final ErrorData error = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+
+        final ErrorData error = (ErrorData) event.getEventData();
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
@@ -278,7 +283,7 @@ class GroupEventMemberIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
+        final OutboxEventJson event = receiveEvent(EventType.MEMBER_JOINED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -290,7 +295,9 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that event data maps to an error
-        final ErrorData error = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+
+        final ErrorData error = (ErrorData) event.getEventData();
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())
@@ -308,11 +315,10 @@ class GroupEventMemberIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(joinRequestEvent), joinHandlerDestination);
 
-        OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
-        final Map<String, Object> memberData = objectMapper.readValue(event.getEventData(),
-            new TypeReference<>() {});
-        final Integer memberIdInt = (Integer) memberData.get("id");
-        final Long memberId = memberIdInt.longValue();
+        OutboxEventJson event = receiveEvent(EventType.MEMBER_JOINED);
+
+        assertThat(event.getEventData()).isExactlyInstanceOf(Member.class);
+        final Long memberId = ((Member) event.getEventData()).id();
 
         final GroupLeaveRequestEvent leaveRequestEvent =
             GroupTestUtility.generateGroupLeaveRequestEvent(
@@ -354,12 +360,10 @@ class GroupEventMemberIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(joinRequestEvent), joinHandlerDestination);
 
-        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
-        final Map<String, Object> memberData = objectMapper.readValue(event.getEventData(),
-            new TypeReference<>() {
-            });
-        final Integer memberIdInt = (Integer) memberData.get("id");
-        final Long memberId = memberIdInt.longValue();
+        final OutboxEventJson event = receiveEvent(EventType.MEMBER_JOINED);
+
+        assertThat(event.getEventData()).isExactlyInstanceOf(Member.class);
+        final Long memberId = ((Member) event.getEventData()).id();
 
         final GroupLeaveRequestEvent leaveRequestEvent =
             GroupTestUtility.generateGroupLeaveRequestEvent(
@@ -367,7 +371,7 @@ class GroupEventMemberIntegrationTest {
 
         inputDestination.send(new GenericMessage<>(leaveRequestEvent), leaveHandlerDestination);
 
-        final OutboxEvent groupUpdatedEvent = receiveEvent(EventType.GROUP_UPDATED);
+        final OutboxEventJson groupUpdatedEvent = receiveEvent(EventType.GROUP_UPDATED);
 
         assertThat(groupUpdatedEvent).satisfies(
             actual -> assertThat(actual.getEventId()).isNotNull(),
@@ -390,7 +394,7 @@ class GroupEventMemberIntegrationTest {
             GroupTestUtility.generateGroupLeaveRequestEvent(10_000L, 10_000L);
 
         inputDestination.send(new GenericMessage<>(leaveRequestEvent), leaveHandlerDestination);
-        final OutboxEvent event = receiveEvent(EventType.MEMBER_LEFT);
+        final OutboxEventJson event = receiveEvent(EventType.MEMBER_LEFT);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId())
@@ -408,7 +412,9 @@ class GroupEventMemberIntegrationTest {
         );
 
         // Check that event data maps to an error
-        final ErrorData error = objectMapper.readValue(event.getEventData(), ErrorData.class);
+        assertThat(event.getEventData()).isExactlyInstanceOf(ErrorData.class);
+
+        final ErrorData error = (ErrorData) event.getEventData();
 
         assertThat(error).satisfies(
             actual -> assertThat(actual.error())

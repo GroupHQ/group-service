@@ -7,9 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
-import org.grouphq.groupservice.group.domain.outbox.EventDataModel;
 import org.grouphq.groupservice.group.domain.outbox.OutboxEvent;
-import org.grouphq.groupservice.group.domain.outbox.OutboxEventJson;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
 import org.grouphq.groupservice.group.testutility.GroupTestUtility;
 import org.junit.jupiter.api.DisplayName;
@@ -57,12 +55,9 @@ class GroupEventPublisherTest {
         objectMapper.registerModule(new JavaTimeModule());
 
         StepVerifier.create(groupEventPublisher.processedEvents().get())
-            .expectNext(OutboxEventJson.copy(outboxEvent[0],
-                objectMapper.readValue(outboxEvent[0].getEventData(), EventDataModel.class)))
-            .expectNext(OutboxEventJson.copy(outboxEvent[1],
-                objectMapper.readValue(outboxEvent[1].getEventData(), EventDataModel.class)))
-            .expectNext(OutboxEventJson.copy(outboxEvent[2],
-                objectMapper.readValue(outboxEvent[2].getEventData(), EventDataModel.class)))
+            .expectNext(outboxEvent[0])
+            .expectNext(outboxEvent[1])
+            .expectNext(outboxEvent[2])
             .expectComplete()
             .verify(Duration.ofSeconds(1));
 
