@@ -75,7 +75,6 @@ spring:
         groupJoinRequests;
         groupLeaveRequests;
         processedEvents;
-        processedEventsTempGroup89
     stream:
       bindings:
         groupCreateRequests-in-0:
@@ -92,8 +91,6 @@ spring:
           group: ${spring.application.name}
         processedEvents-out-0:
           destination: group-event-results
-        processedEventsTempGroup89-out-0:
-          destination: group-event-results-temp-group-89
   integration:
     poller:
       fixed-delay: 50
