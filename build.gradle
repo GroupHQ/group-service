@@ -1,12 +1,13 @@
 plugins {
     id "java"
-    id 'org.springframework.boot' version '3.1.+'
-    id 'io.spring.dependency-management' version '1.+'
+    id 'org.springframework.boot' version '3.2.+'
 
-    id "org.owasp.dependencycheck" version "latest.release"
+    id "org.owasp.dependencycheck" version "9.0.9"
     id "checkstyle"
     id "pmd"
 }
+
+apply plugin: "io.spring.dependency-management"
 
 // Checks Dependencies for Known Vulnerabilities
 dependencyCheck {
@@ -61,7 +62,7 @@ bootBuildImage {
 }
 
 ext {
-    set("springCloudVersion", "2022.0.4")
+    set("springCloudVersion", "2023.0.0")
     set('otelVersion', "1.26.0")
 }
 

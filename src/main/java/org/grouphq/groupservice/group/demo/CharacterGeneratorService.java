@@ -10,8 +10,45 @@ import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
 import net.datafaker.providers.base.Community;
 import net.datafaker.providers.base.Superhero;
-import net.datafaker.providers.entertainment.*;
-import net.datafaker.providers.videogame.*;
+import net.datafaker.providers.entertainment.BackToTheFuture;
+import net.datafaker.providers.entertainment.BigBangTheory;
+import net.datafaker.providers.entertainment.BreakingBad;
+import net.datafaker.providers.entertainment.BrooklynNineNine;
+import net.datafaker.providers.entertainment.DoctorWho;
+import net.datafaker.providers.entertainment.DragonBall;
+import net.datafaker.providers.entertainment.FamilyGuy;
+import net.datafaker.providers.entertainment.FreshPrinceOfBelAir;
+import net.datafaker.providers.entertainment.Futurama;
+import net.datafaker.providers.entertainment.GameOfThrones;
+import net.datafaker.providers.entertainment.Ghostbusters;
+import net.datafaker.providers.entertainment.HarryPotter;
+import net.datafaker.providers.entertainment.HeyArnold;
+import net.datafaker.providers.entertainment.Hobbit;
+import net.datafaker.providers.entertainment.HowIMetYourMother;
+import net.datafaker.providers.entertainment.HowToTrainYourDragon;
+import net.datafaker.providers.entertainment.LordOfTheRings;
+import net.datafaker.providers.entertainment.Naruto;
+import net.datafaker.providers.entertainment.OnePiece;
+import net.datafaker.providers.entertainment.ResidentEvil;
+import net.datafaker.providers.entertainment.RickAndMorty;
+import net.datafaker.providers.entertainment.Seinfeld;
+import net.datafaker.providers.entertainment.Simpsons;
+import net.datafaker.providers.entertainment.SouthPark;
+import net.datafaker.providers.entertainment.Spongebob;
+import net.datafaker.providers.entertainment.StarTrek;
+import net.datafaker.providers.entertainment.StarWars;
+import net.datafaker.providers.entertainment.StrangerThings;
+import net.datafaker.providers.entertainment.Supernatural;
+import net.datafaker.providers.entertainment.Witcher;
+import net.datafaker.providers.videogame.FinalFantasyXIV;
+import net.datafaker.providers.videogame.LeagueOfLegends;
+import net.datafaker.providers.videogame.MassEffect;
+import net.datafaker.providers.videogame.Overwatch;
+import net.datafaker.providers.videogame.RedDeadRedemption2;
+import net.datafaker.providers.videogame.SonicTheHedgehog;
+import net.datafaker.providers.videogame.StreetFighter;
+import net.datafaker.providers.videogame.SuperMario;
+import net.datafaker.providers.videogame.Zelda;
 import org.grouphq.groupservice.config.GroupProperties;
 import org.springframework.stereotype.Service;
 
@@ -147,7 +184,7 @@ public class CharacterGeneratorService {
         };
     }
 
-    private <T>CharacterEntity create(String name, Class<T> universe) {
+    private <T> CharacterEntity create(String name, Class<T> universe) {
         return new CharacterEntity(name, getUniverse(universe));
     }
 
