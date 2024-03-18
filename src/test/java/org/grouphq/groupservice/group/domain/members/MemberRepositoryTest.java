@@ -303,4 +303,24 @@ class MemberRepositoryTest {
             )
             .verifyComplete();
     }
+
+    @Test
+    @DisplayName("Returns member by groupId, websocketId, and member status")
+    void returnMemberByGroupIdWebsocketIdAndMemberStatus() {
+        StepVerifier.create(
+                groupRepository.save(GroupTestUtility.generateFullGroupDetails(292L, GroupStatus.ACTIVE))
+                    .flatMap(group -> {
+                        final Member member = Member.of(USER, 292L);
+                        return memberRepository.save(member)
+                            .flatMap(savedMember -> memberRepository.findMemberByGroupIdAndWebsocketIdAndMemberStatus(
+                                savedMember.groupId(), savedMember.websocketId(), savedMember.memberStatus()));
+                    })
+            )
+            .assertNext(member -> {
+                assertThat(member.groupId()).isEqualTo(292L);
+                assertThat(member.username()).isEqualTo(USER);
+                assertThat(member.memberStatus()).isEqualTo(MemberStatus.ACTIVE);
+            })
+            .verifyComplete();
+    }
 }

@@ -26,4 +26,7 @@ public interface MemberRepository
     Mono<Member> findMemberByIdAndWebsocketId(Long id, UUID websocketId);
 
     Mono<Member> findMemberByWebsocketIdAndMemberStatus(UUID websocketId, MemberStatus memberStatus);
+
+    Mono<Member> findMemberByGroupIdAndWebsocketIdAndMemberStatus(
+        Long groupId, UUID websocketId, MemberStatus memberStatus);
 }

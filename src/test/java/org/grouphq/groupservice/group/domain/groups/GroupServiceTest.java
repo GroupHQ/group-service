@@ -7,8 +7,9 @@ import java.time.Instant;
 import java.util.UUID;
 import org.grouphq.groupservice.group.domain.exceptions.GroupNotActiveException;
 import org.grouphq.groupservice.group.domain.exceptions.GroupSizeException;
+import org.grouphq.groupservice.group.domain.exceptions.MemberAlreadyLeftGroupException;
 import org.grouphq.groupservice.group.domain.exceptions.MemberNotFoundException;
-import org.grouphq.groupservice.group.domain.exceptions.UserAlreadyInGroupException;
+import org.grouphq.groupservice.group.domain.exceptions.UserAlreadyJoinedGroupException;
 import org.grouphq.groupservice.group.domain.members.MemberStatus;
 import org.grouphq.groupservice.group.domain.members.repository.MemberRepository;
 import org.grouphq.groupservice.group.web.objects.egress.PublicMember;
@@ -327,7 +328,7 @@ class GroupServiceTest {
                                 member.groupId(), "user1Alt", member.websocketId().toString()))
                     )
             )
-            .expectError(UserAlreadyInGroupException.class)
+            .expectError(UserAlreadyJoinedGroupException.class)
             .verify();
     }
 
@@ -340,6 +341,24 @@ class GroupServiceTest {
                         groupService.removeMember(group.id(), 1L, UUID.randomUUID().toString()))
             )
             .expectError(MemberNotFoundException.class)
+            .verify();
+    }
+
+    @Test
+    @DisplayName("Fails gracefully when trying to remove a member that has already been removed")
+    void failsGracefullyWhenRemovingMemberThatHasAlreadyBeenRemoved() {
+        StepVerifier.create(
+                groupService.createGroup(GROUP, GROUP_DESCRIPTION, 10)
+                    .flatMap(group ->
+                        groupService.addMember(group.id(), USER, UUID.randomUUID().toString())
+                        .flatMap(member ->
+                            groupService.removeMember(member.groupId(), member.id(), member.websocketId().toString())
+                            .then(groupService
+                                .removeMember(member.groupId(), member.id(), member.websocketId().toString()))
+                        )
+                    )
+            )
+            .expectError(MemberAlreadyLeftGroupException.class)
             .verify();
     }
 
