@@ -1,19 +1,5 @@
 package org.grouphq.groupservice.group.demo;
 
-import com.github.javafaker.BackToTheFuture;
-import com.github.javafaker.DragonBall;
-import com.github.javafaker.Faker;
-import com.github.javafaker.GameOfThrones;
-import com.github.javafaker.HarryPotter;
-import com.github.javafaker.HowIMetYourMother;
-import com.github.javafaker.LeagueOfLegends;
-import com.github.javafaker.LordOfTheRings;
-import com.github.javafaker.Overwatch;
-import com.github.javafaker.RickAndMorty;
-import com.github.javafaker.StarTrek;
-import com.github.javafaker.Superhero;
-import com.github.javafaker.Witcher;
-import com.github.javafaker.Zelda;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -21,6 +7,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.datafaker.Faker;
+import net.datafaker.providers.base.Superhero;
+import net.datafaker.providers.entertainment.*;
+import net.datafaker.providers.videogame.LeagueOfLegends;
+import net.datafaker.providers.videogame.Overwatch;
+import net.datafaker.providers.videogame.Zelda;
 import org.grouphq.groupservice.config.GroupProperties;
 import org.springframework.stereotype.Service;
 

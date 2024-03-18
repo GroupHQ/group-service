@@ -2,11 +2,11 @@ package org.grouphq.groupservice.group.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javafaker.Faker;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
+import net.datafaker.Faker;
 import org.grouphq.groupservice.config.DataConfig;
 import org.grouphq.groupservice.config.SecurityConfig;
 import org.grouphq.groupservice.group.domain.groups.Group;

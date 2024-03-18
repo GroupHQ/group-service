@@ -1,9 +1,9 @@
 package org.grouphq.groupservice.group.demo;
 
-import com.github.javafaker.Faker;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.datafaker.Faker;
 import org.grouphq.groupservice.ai.OpenAiGroupGeneratorService;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
