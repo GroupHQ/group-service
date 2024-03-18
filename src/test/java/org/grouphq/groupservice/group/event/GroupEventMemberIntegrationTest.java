@@ -142,7 +142,7 @@ class GroupEventMemberIntegrationTest {
     }
 
     @Test
-    @DisplayName("Processes a group join request successfully")
+    @DisplayName("Processes a group join request successfully with idempotence")
     void successfullyJoinsGroup() {
         saveGroup(Group.of(GROUP, DESCRIPTION,
             10, GroupStatus.ACTIVE));
@@ -151,7 +151,7 @@ class GroupEventMemberIntegrationTest {
             GroupTestUtility.generateGroupJoinRequestEvent(group.id());
         inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
 
-        final OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
+        OutboxEvent event = receiveEvent(EventType.MEMBER_JOINED);
 
         assertThat(event).satisfies(
             actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
@@ -172,6 +172,19 @@ class GroupEventMemberIntegrationTest {
                 assertMemberEqualsExpectedProperties(
                     actual, requestEvent, MemberStatus.ACTIVE))
             .expectComplete().verify(Duration.ofSeconds(1));
+
+        // Test for idempotence
+        inputDestination.send(new GenericMessage<>(requestEvent), joinHandlerDestination);
+        event = receiveEvent(EventType.MEMBER_JOINED);
+
+        assertThat(event).satisfies(
+            actual -> assertThat(actual.getEventId()).isEqualTo(requestEvent.getEventId()),
+            actual -> assertThat(actual.getAggregateId()).isEqualTo(requestEvent.getAggregateId()),
+            actual -> assertThat(actual.getAggregateType()).isEqualTo(AggregateType.GROUP),
+            actual -> assertThat(actual.getEventType()).isEqualTo(EventType.MEMBER_JOINED),
+            actual -> assertThat(actual.getEventStatus()).isEqualTo(EventStatus.SUCCESSFUL),
+            actual -> assertThat(actual.getWebsocketId()).isEqualTo(requestEvent.getWebsocketId())
+        );
     }
 
     @Test
@@ -297,7 +310,7 @@ class GroupEventMemberIntegrationTest {
     }
 
     @Test
-    @DisplayName("Successfully leaves group")
+    @DisplayName("Successfully leaves group with idempotence")
     void successfullyLeavesGroup() {
         saveGroup(Group.of(GROUP, DESCRIPTION, 10, GroupStatus.ACTIVE));
 
@@ -337,6 +350,25 @@ class GroupEventMemberIntegrationTest {
             .expectNextMatches(member -> member.memberStatus().equals(MemberStatus.LEFT))
             .expectComplete()
             .verify(Duration.ofSeconds(1));
+
+        // Test for idempotence
+        inputDestination.send(new GenericMessage<>(leaveRequestEvent), leaveHandlerDestination);
+        event = receiveEvent(EventType.MEMBER_LEFT);
+
+        assertThat(event).satisfies(
+            actual -> assertThat(actual.getEventId())
+                .isEqualTo(leaveRequestEvent.getEventId()),
+            actual -> assertThat(actual.getAggregateId())
+                .isEqualTo(leaveRequestEvent.getAggregateId()),
+            actual -> assertThat(actual.getAggregateType())
+                .isEqualTo(AggregateType.GROUP),
+            actual -> assertThat(actual.getEventType())
+                .isEqualTo(EventType.MEMBER_LEFT),
+            actual -> assertThat(actual.getEventStatus())
+                .isEqualTo(EventStatus.SUCCESSFUL),
+            actual -> assertThat(actual.getWebsocketId())
+                .isEqualTo(leaveRequestEvent.getWebsocketId())
+        );
     }
 
     @Test

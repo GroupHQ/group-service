@@ -61,7 +61,6 @@
     <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass" />
     <rule ref="category/java/errorprone.xml/MoreThanOneLogger" />
     <rule ref="category/java/errorprone.xml/NonCaseLabelInSwitchStatement" />
-    <rule ref="category/java/errorprone.xml/NonSerializableClass" />
     <rule ref="category/java/errorprone.xml/NonStaticInitializer" />
     <rule ref="category/java/errorprone.xml/NullAssignment" />
     <rule ref="category/java/errorprone.xml/OverrideBothEqualsAndHashcode" />
@@ -123,5 +122,8 @@
 <!--    <rule ref="category/java/errorprone.xml/EmptySynchronizedBlock" />-->
 <!--    <rule ref="category/java/errorprone.xml/EmptyTryBlock" />-->
 <!--    <rule ref="category/java/errorprone.xml/EmptyWhileStmt" />-->
+
+<!--  We serialize with Jackson, which can serialize types that don't implement the Serializable interface  -->
+<!--    <rule ref="category/java/errorprone.xml/NonSerializableClass" />-->
 
 </ruleset>

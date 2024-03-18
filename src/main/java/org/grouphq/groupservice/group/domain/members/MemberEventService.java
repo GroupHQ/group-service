@@ -3,6 +3,8 @@ package org.grouphq.groupservice.group.domain.members;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
+import org.grouphq.groupservice.group.domain.exceptions.MemberAlreadyLeftGroupException;
+import org.grouphq.groupservice.group.domain.exceptions.UserAlreadyJoinedGroupException;
 import org.grouphq.groupservice.group.domain.groups.GroupService;
 import org.grouphq.groupservice.group.domain.outbox.OutboxService;
 import org.grouphq.groupservice.group.event.daos.GroupUpdatedEvent;
@@ -34,9 +36,13 @@ public class MemberEventService {
             .flatMap(requestEvent ->
                 groupService.addMember(
                     event.getAggregateId(), event.getUsername(), event.getWebsocketId()))
+            .flatMap(member -> sendGroupUpdateEvent(event.getAggregateId()).thenReturn(member))
+            .onErrorResume(UserAlreadyJoinedGroupException.class, throwable -> {
+                log.info("User already joined group: {}", event);
+                return Mono.just(throwable.member);
+            })
             .flatMap(member -> outboxService.createGroupJoinSuccessfulEvent(event, member))
             .flatMap(outboxService::saveOutboxEvent)
-            .then(sendGroupUpdateEvent(event.getAggregateId()))
             .doOnSuccess(emptySave ->
                 log.info("Fulfilled join request. Saved new member and outbox event: {}", event))
             .log()
@@ -66,9 +72,13 @@ public class MemberEventService {
             .flatMap(requestEvent ->
                 groupService.removeMember(
                     event.getAggregateId(), event.getMemberId(), event.getWebsocketId()))
+            .flatMap(member -> sendGroupUpdateEvent(event.getAggregateId()).thenReturn(member))
+            .onErrorResume(MemberAlreadyLeftGroupException.class, throwable -> {
+                log.info("Member already left group: {}", event);
+                return Mono.just(throwable.member);
+            })
             .flatMap(member -> outboxService.createGroupLeaveSuccessfulEvent(event, member))
             .flatMap(outboxService::saveOutboxEvent)
-            .then(sendGroupUpdateEvent(event.getAggregateId()))
             .doOnSuccess(emptySave ->
                 log.info("Fulfilled remove request. "
                     + "Removed member from group and saved outbox event: {}", event))

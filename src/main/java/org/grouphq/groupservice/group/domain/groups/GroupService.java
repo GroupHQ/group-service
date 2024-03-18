@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.grouphq.groupservice.group.domain.exceptions.ExceptionMapper;
 import org.grouphq.groupservice.group.domain.exceptions.GroupDoesNotExistException;
+import org.grouphq.groupservice.group.domain.exceptions.MemberAlreadyLeftGroupException;
 import org.grouphq.groupservice.group.domain.exceptions.MemberNotFoundException;
+import org.grouphq.groupservice.group.domain.exceptions.UserAlreadyJoinedGroupException;
 import org.grouphq.groupservice.group.domain.groups.repository.GroupRepository;
 import org.grouphq.groupservice.group.domain.members.Member;
 import org.grouphq.groupservice.group.domain.members.MemberStatus;
@@ -115,8 +117,11 @@ public class GroupService {
         log.info("Adding member to group with id: {}", groupId);
         return groupRepository.findById(groupId)
             .switchIfEmpty(Mono.error(new GroupDoesNotExistException(CANNOT_FETCH_GROUP_MESSAGE + groupId)))
-            .flatMap(group ->
-                memberRepository.save(Member.of(websocketId, username, groupId)))
+            .then(memberRepository.findMemberByGroupIdAndWebsocketIdAndMemberStatus(
+                groupId, UUID.fromString(websocketId), MemberStatus.ACTIVE)
+                .flatMap(member -> Mono.<Member>error(new UserAlreadyJoinedGroupException(member)))
+                .switchIfEmpty(Mono.defer(() -> memberRepository.save(Member.of(websocketId, username, groupId))))
+            )
             .flatMap(member ->
                 groupRepository.updatedLastMemberActivityByGroupId(groupId, member.createdDate())
                 .thenReturn(member))
@@ -128,6 +133,10 @@ public class GroupService {
         log.info("Removing member from group with member id: {}", memberId);
         return memberRepository.findMemberByIdAndWebsocketId(memberId, websocketUuid)
             .switchIfEmpty(Mono.error(new MemberNotFoundException("Cannot remove member")))
+            .flatMap(member ->
+                member.memberStatus() == MemberStatus.LEFT
+                    ? Mono.error(new MemberAlreadyLeftGroupException(member))
+                    : Mono.just(member))
             .flatMap(group ->
                 memberRepository.removeMemberFromGroup(memberId, websocketUuid, MemberStatus.LEFT))
             .flatMap(member ->
