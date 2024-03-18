@@ -2,10 +2,10 @@ package org.grouphq.groupservice.group.testutility;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.github.javafaker.Faker;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import net.datafaker.Faker;
 import org.grouphq.groupservice.group.domain.groups.Group;
 import org.grouphq.groupservice.group.domain.groups.GroupStatus;
 import org.grouphq.groupservice.group.domain.members.Member;
