@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -15,6 +14,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
+import net.datafaker.Faker;
 import org.grouphq.groupservice.config.DataConfig;
 import org.grouphq.groupservice.config.SecurityConfig;
 import org.grouphq.groupservice.group.domain.groups.Group;
