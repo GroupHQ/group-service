@@ -1,5 +1,3 @@
-_This README is a work in progress. Some steps may be incomplete or missing_
-
 # group-service
 Group Service provides functionality for managing and joining dynamically generated groups.
 <hr>
@@ -32,13 +30,15 @@ Group Service provides functionality for managing and joining dynamically genera
 ## Synopsis
 Group service handles all business logic related to the processing of groups and their members.
 
+Note: in the context of this README, a user or client refers to either an end-user another service application.
+
 ### Group Generation
 Groups are periodically generated using configurable parameters that can be tuned based on the deployment 
 environment. If enabled, groups are generated using the OpenAI API and the Java Faker library. Specifically, a random 
-character is selected from a show or movie. Using this character, a request is then sent to OpenAI to create a group 
+character is selected from a popular show, movie or video game. Using this character, a request is then sent to OpenAI to create a group 
 posting (a title and a description) taking the persona of the character in the context of their “universe” 
-(i.e. the show or movie the character is from). If the request fails and retries have been exhausted, or if the OpenAI 
-integration is disabled, then a fallback group is created using randomly generated text.
+(i.e. the show, movie, or video game the character is from). If the request fails and retries have been exhausted, or if the OpenAI 
+integration is disabled, then a fallback group is created using lorem ipsum text.
 
 ### Group Expiration
 A group automatically expires after it reaches a certain age. Any group that is expired becomes disbanded, and any 
@@ -47,24 +47,34 @@ disbanded group automatically disbands the members currently in that group.
 ### Group Membership
 The user-membership relationship is a one-to-many relationship. Every time a user joins a group, a member is created 
 for them. If a user leaves and joins the same group, they would have two members associated with that group, with only 
-the second having an active status. This strategy allows the creation of a simple and clear audit history, 
-keeping track of the members a group has, and what users those members belong to. Currently, users are only allowed to 
-have one active member at any time. 
+the second having an active status. This strategy allows: 
+- the creation of a simple and clear member history
+- keeping track of the members a group has and what users those members belong to
 
-### Expected Usage
-Group Service provides two REST endpoints for retrieving data. Both are expected to be used when a user visits the 
-GroupHQ web application. One endpoint returns a user’s currently active member, if any. This lets clients know if a 
-user is currently part of any group. The second endpoint returns a list of currently active groups that a user
-would initially request. See [Group Sync](https://github.com/GroupHQ/group-sync) for more information on how users can 
-keep this data up-to-date without having to constantly poll the Group Service.
+Currently, users are only allowed to have one active member at any time. 
 
-### Requests
-All group-related requests, such as the creation of groups or a member joining a group, take place through the service’s 
-event flow. During this flow, a request is carried out, and an outbox event indicating the request’s result is supplied 
-to the event broker. Requests are sent through either the Group Service instance itself (e.g. generating groups) 
-or from request events supplied by the event broker. Currently, Group Sync service instances allow users to supply join 
-and leave requests to the event broker, while also fanning out outbox events to currently connected users, allowing them 
-to keep in-sync with the latest group changes.
+### Endpoints for Retrieving Data
+Group Service provides a few REST endpoints for retrieving data:
+
+- `/groups`: Returns a list of currently active groups and their members
+- `/groups/events`: Similar to `/groups`, except each group is wrapped in an event object
+- `/groups/my-member`: Returns the user's currently active member, if any, based on their authentication credentials
+
+### Making Requests
+Group Service accepts requests posted to an event broker on the queues it monitors. The following types of requests are currently accepted:
+- Create Group
+- Update Group Status
+- Join Group
+- Leave Group
+
+After processing a request, group service publishes an event object to another queue that can be consumed by other services.
+[Group Sync]([url](https://github.com/GroupHQ/group-sync)) is one of these services.
+
+### Putting it All Together
+Clients of Group Service can expect to be able to do the following:
+- Retrieve active groups and their members (either as standalone objects or wrapped in an event object)
+- Retrieve their currently active member
+- Post requests for processing by publishing them to an event queue that group service consumes. Processed requests are published to a separate queue for any services interested.
 
 ## Setting up the Development Environment
 
@@ -79,7 +89,7 @@ Git Bash using [Git For Windows](https://gitforwindows.org/).
 - Kubeconform (for validating Kubernetes manifests). [Download here](https://github.com/yannh/kubeconform?tab=readme-ov-file#Installation)
 
 Group Service uses both a PostgreSQL database and a RabbitMQ event broker. While you can download, configure, and run
-these services manually, it is highly recommended to use the provided docker-compose file to run these services, 
+these services manually, it's recommended to use the provided docker-compose file to run these services, 
 located in the GroupHQ Deployment repository. See the [GroupHQ Deployment README](https://github.com/GroupHQ/groupHQ-deployment?tab=readme-ov-file#local-environment-using-docker)
 for more information.
 
@@ -107,19 +117,19 @@ And enable the integration by setting the following environment variable:
 When developing new features, it's recommended to follow a test-driven development approach using the classicist style
 of testing. What this means is:
 1. Prioritize writing tests first over code. At the very minimum, write out test cases for the changes you want to 
-make. This will help you think through the design of your changes, and will help you catch defects early on.
+make. This will help you think through the design of your changes and catch defects early on.
 2. Avoid excessive mocking. Mocks are useful for isolating your code from external dependencies, but they can also
 make your tests brittle and hard to maintain. If you find yourself mocking a lot, it may be a sign that the class
 under test is more suitable for integration testing. If you are mocking out an external service, consider using
 a Testcontainer for simulating the service as a fake type of [test double](https://martinfowler.com/bliki/TestDouble.html).
 You can find some examples of this in the `GroupServiceIntegrationTest` class*.
 3. Write tests, implement, and then just as important, refactor and review. It's easy to get caught up in 
-messy code to write code that passes tests. Always take the time to review your code after implementing a feature.
+messy code that passes tests. Take the time to review your code after implementing a feature.
 
 
 *When testing the event-messaging system with an event broker, use the Spring Cloud Stream Test Binder.
 All messaging with the event broker takes place through Spring Cloud Stream. Instead of testing the dependency itself,
-rely on the Spring Cloud Stream Test Binder to simulate the broker. This will allow you to test the messaging system
+rely on the Spring Cloud Stream Test Binder to simulate the broker. This allows you to test the messaging system
 without having to worry about the sending and receiving of messages. See the `GroupEventGroupIntegrationTest` class 
 for an example of this. See the [Spring Cloud Stream Test Binder documentation](https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/spring_integration_test_binder.html)
 for more information on the test binder.
@@ -137,7 +147,7 @@ must be reviewed.
 For code style, quality, and dependency vulnerability checks, you can view a detailed report on these checks once
 they have completed by navigating to the build/reports directory. 
 You can run these checks with the following commands (These commands are compatible with the bash terminal. If you are 
-using a different terminal, you may need to modify the commands to work with your terminal):
+using a different terminal, you may need to modify the commands to work in that terminal environment):
 
 #### Code Style
 ```bash
@@ -152,8 +162,6 @@ using a different terminal, you may need to modify the commands to work with you
 ```
 
 #### Dependency Vulnerability Check
-
-
 ```bash
 ./gradlew dependencyCheckAnalyze --stacktrace -PnvdApiKey="YOUR_NVD_API_KEY"
 ```
@@ -177,7 +185,7 @@ kustomize build k8s/overlays/observability | kubeconform -strict -summary -outpu
 
 It's recommended to add these commands to your IDE as separate run configurations for quick access.
 Make sure you do not commit these run configurations to the version control system, especially
-any that may contain sensitive info (such as an NVD API key for the dependency vulnerability check).
+any that may contain sensitive info (such as the NVD API key for the dependency vulnerability check).
 
 ### User Automated Tests & Regression Testing
 For any features that introduce a new user-facing feature, it's recommended to add automated tests for them to 
@@ -186,7 +194,7 @@ For more information on how to write these tests, see the associated READEME of 
 
 When any pull request is opened, a request is sent to the [GroupHQ Continuous Testing Proxy Server](https://github.com/GroupHQ/grouphq-continuous-testing-proxy-server)
 to run the test suite against the pull request. The length of a test run is expected to vary over time, 
-but expect it to take no more than an hour (at the time of writing, it takes about 20 minutes). 
+but it's currently pretty quick at just under 10 minutes for around ~200 tests. 
 Once the test run is complete, the results will be posted to the pull request, including a link to the test results to 
 review if needed.
 
