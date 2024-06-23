@@ -1,0 +1,37 @@
+server:
+  error:
+    include-stacktrace: never
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups
+  flyway:
+    url: jdbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups
+  rabbitmq:
+    host: ${RABBITMQ_HOST:grouphq-rabbitmq}
+openai:
+  enabled: true
+  api_key: ${OPEN_AI_API_KEY}
+  max-tokens: 500
+  model-id: gpt-3.5-turbo
+  retry-config:
+    initial-delay: 1000
+    max-attempts: 3
+    max-delay: 5000
+    jitter-factor: 1.5
+group:
+  loader:
+    enabled: true
+    group-service-jobs:
+      load-groups:
+        initial-delay: 0
+        fixed-delay: 250
+        initial-group-count: 1
+        fixed-group-addition-count: 1
+      expire-groups:
+        initial-delay: 0
+        fixed-delay: 179
+        group-lifetime: 1800
+      load-members:
+        initial-delay: 5
+        fixed-delay: 120
+        member-join-max-delay: 120

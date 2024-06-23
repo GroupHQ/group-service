@@ -42,6 +42,6 @@ public class OpenAiApiConfig {
         private int maxAttempts;
         private int initialDelay;
         private int maxDelay;
-        private int jitterFactor;
+        private double jitterFactor;
     }
 }
