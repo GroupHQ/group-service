@@ -5,7 +5,7 @@ spring:
   r2dbc:
     url: r2dbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups
   flyway:
-    url: jdbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups
+    url: jdbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups?ssl=true&sslMode=verify-full
   rabbitmq:
     host: ${RABBITMQ_HOST:grouphq-rabbitmq}
 openai:
