@@ -6,6 +6,7 @@ env:
   IMAGE_NAME: grouphq/group-service
   VERSION: ${{ github.sha }}
   NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+  AWS_RDS_ROOT_CERT_US_EAST_1: https://truststore.pki.rds.amazonaws.com/us-east-1/us-east-1-bundle.pem
 
 jobs:
   build:
@@ -79,6 +80,10 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
+      - name: Download AWS RDS Root Certificate for us-east-1
+        run: |
+          mkdir -p ./.postgresql
+          curl -o ./.postgresql/root.crt ${{ env.AWS_RDS_ROOT_CERT_US_EAST_1 }}
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
