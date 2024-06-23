@@ -4,6 +4,8 @@ server:
 spring:
   r2dbc:
     url: r2dbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups
+    properties:
+      sslMode: VERIFY_FULL
   flyway:
     url: jdbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups?ssl=true&sslMode=verify-full
   rabbitmq:
