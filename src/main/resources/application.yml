@@ -37,7 +37,7 @@ openai:
     initial-delay: 1000
     max-attempts: 3
     max-delay: 5000
-    jitter-factor: 1.5
+    jitter-factor: 0.5
 spring:
   application:
     name: group-service
