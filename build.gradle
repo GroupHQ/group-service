@@ -58,6 +58,9 @@ repositories {
 
 bootBuildImage {
     imageName = "${project.name}"
+    bindings = [
+            "${projectDir}/.postgresql:/home/cnb/.postgresql:ro".toString()
+    ]
     environment = ["BP_JVM_VERSION" : "17.*"]
 }
 
