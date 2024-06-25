@@ -95,8 +95,6 @@ jobs:
           chmod +x gradlew
           ./gradlew bootBuildImage \
           --imageName ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
-      - name: Add Amazon RDS Root Certificate (us-east-1)
-        run: docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} .
       - name: OCI image vulnerability scanning
         uses: anchore/scan-action@v3
         id: scan
