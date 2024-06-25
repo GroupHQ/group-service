@@ -2,14 +2,28 @@ server:
   error:
     include-stacktrace: never
 spring:
+  ssl:
+    bundle:
+      pem:
+        client:
+          truststore:
+            certificate: "classpath:aws/postgres/root.crt"
   r2dbc:
     url: r2dbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups
     properties:
       sslMode: VERIFY_FULL
+      sslRootCert: "classpath:aws/postgres/root.crt"
   flyway:
-    url: jdbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups?ssl=true&sslMode=verify-full
+    url: jdbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups
+    jdbc-properties:
+      ssl: true
+      sslMode: verify_full
+      sslRootCert: "classpath:aws/postgres/root.crt"
   rabbitmq:
     host: ${RABBITMQ_HOST:grouphq-rabbitmq}
+    port: 5671
+    ssl:
+      enabled: true
 openai:
   enabled: true
   api_key: ${OPEN_AI_API_KEY}
