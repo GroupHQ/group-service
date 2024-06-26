@@ -46,7 +46,7 @@ spring:
   r2dbc:
     username: user
     password: password
-    url: r2dbc:postgresql://localhost:5432/grouphq_group
+    url: r2dbc:postgresql://localhost:5432/grouphq_groups
     pool:
       max-create-connection-time: 2s
       initial-size: 5
@@ -54,7 +54,7 @@ spring:
   flyway:
     user: ${spring.r2dbc.username}
     password: ${spring.r2dbc.password}
-    url: jdbc:postgresql://localhost:5432/grouphq_group
+    url: jdbc:postgresql://localhost:5432/grouphq_groups
 #  config:
 #    import: optional:configserver:${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
   cloud:
