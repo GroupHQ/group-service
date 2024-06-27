@@ -14,7 +14,7 @@ spring:
       sslMode: VERIFY_FULL
       sslRootCert: "aws/postgres/root.crt"
   flyway:
-    url: jdbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups?ssl=true&sslMode=verify-full&sslRootCert=classpath:aws/postgres/root.crt
+    url: jdbc:postgresql://${POSTGRES_HOST:grouphq-postgres}/grouphq_groups?ssl=true;sslMode=verify-full;sslRootCert=classpath:aws/postgres/root.crt
   rabbitmq:
     host: ${RABBITMQ_HOST:grouphq-rabbitmq}
     port: 5671
